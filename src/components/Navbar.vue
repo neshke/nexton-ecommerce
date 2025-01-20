@@ -167,7 +167,6 @@ const closeMenu = () => {
   text-align: center;
   background-color: #6366f1 !important;
   color: white !important;
-  margin-bottom: 4rem !important;
 }
 
 .login-btn::after {
@@ -232,7 +231,11 @@ const closeMenu = () => {
 
   .nav-links li {
     width: 100%;
-    padding: 0.8rem 20px; /* Increased vertical padding */
+    padding: 0;  /* Reset desktop padding */
+  }
+
+  .nav-links li a {
+    padding: 1.2rem 20px;  /* Move padding to anchor tag for mobile */
   }
 
   .nav-links a {
@@ -269,6 +272,7 @@ const closeMenu = () => {
     color: white !important;
     padding: 1rem !important;
     margin: 0;
+    margin-bottom: 4rem !important;
     text-align: center;
     border-radius: 0 !important; /* Remove border radius */
   }

@@ -59,7 +59,6 @@ import { useRoute, useRouter } from "vue-router";
 import { useProductStore } from "@/stores/productStore";
 import { useNotification } from "@/utils/notifications";
 import { PLACEHOLDER_IMAGE } from "@/utils/constants";
-import type { Product } from "@/types";
 
 const route = useRoute();
 const router = useRouter();

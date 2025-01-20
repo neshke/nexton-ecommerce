@@ -38,7 +38,6 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 import type { Product } from "@/types";
 
 const props = defineProps<{
@@ -51,7 +50,6 @@ const emit = defineEmits<{
   'view-product': [Product];
 }>();
 
-const router = useRouter();
 const isAddingToCart = ref(false);
 
 const handleProductClick = (product: Product) => {

@@ -82,6 +82,16 @@ const form = ref<FormData>({
   message: "",
 });
 
+const formErrors = ref<{ [key: string]: string }>({});
+
+const validateField = (key: keyof typeof form) => {
+  if (!form.value[key]) {
+    formErrors.value[key as string] = `${key} is required`;
+  } else {
+    delete formErrors.value[key as string];
+  }
+};
+
 const contactInfo = [
   {
     icon: "map-marker-alt",

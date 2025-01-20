@@ -49,6 +49,8 @@ import Footer from '@/components/Footer.vue';
 <style scoped>
 .about-page {
   min-height: 100vh;
+  display: flex; /* Add this */
+  flex-direction: column; /* Add this */
 }
 
 .hero {
@@ -71,6 +73,7 @@ import Footer from '@/components/Footer.vue';
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 2rem;
+  flex: 1; /* Add this */
 }
 
 .about-grid {
@@ -130,6 +133,10 @@ import Footer from '@/components/Footer.vue';
 
   .about-stats {
     grid-template-columns: 1fr;
+  }
+  
+  .main-content {
+    padding: 2rem 1rem; /* Adjust padding for mobile */
   }
 }
 
