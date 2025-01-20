@@ -53,7 +53,6 @@
 <script setup lang="ts">
 import { ref, defineProps, defineEmits } from "vue";
 import { useRouter } from "vue-router";
-import { useNotification } from "@/utils/notifications";
 import { PLACEHOLDER_IMAGE } from "@/utils/constants";
 import type { Product } from "@/types";
 
@@ -67,7 +66,6 @@ const emit = defineEmits(["close", "add-to-cart"]);
 const quantity = ref(1);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const { notification, showNotification } = useNotification();
 
 const router = useRouter();
 

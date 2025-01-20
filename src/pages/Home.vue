@@ -67,31 +67,15 @@
             :style="{ animationDelay: `${index * 0.3}s` }"
           >
             <div class="quote-icon">"</div>
-            <p>Great products and amazing service!</p>
+            <p>{{ testimonial.text }}</p>
             <div class="testimonial-author">
               <img
-                :src="PLACEHOLDER_IMAGE"
-                alt="Jane Doe"
+                :src="testimonial.avatar"
+                :alt="testimonial.author"
                 class="author-image"
                 @error="handleImageError"
               />
-              <span>Jane Doe</span>
-            </div>
-          </div>
-          <div
-            class="testimonial-item animate-scale-in"
-            :style="{ animationDelay: `0.3s` }"
-          >
-            <div class="quote-icon">"</div>
-            <p>I love shopping here. Highly recommend!</p>
-            <div class="testimonial-author">
-              <img
-                :src="PLACEHOLDER_IMAGE"
-                alt="John Smith"
-                class="author-image"
-                @error="handleImageError"
-              />
-              <span>John Smith</span>
+              <span>{{ testimonial.author }}</span>
             </div>
           </div>
         </div>
@@ -169,8 +153,10 @@ const handleImageError = (e: Event) => {
 };
 
 const testimonials = ref(
-  TESTIMONIALS.map((testimonial) => ({
-    ...testimonial,
+  TESTIMONIALS.map(({ id, text, author }) => ({
+    id,
+    text,
+    author,
     avatar: PLACEHOLDER_IMAGE,
   }))
 );

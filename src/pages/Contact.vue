@@ -28,7 +28,7 @@
         <!-- Contact Form -->
         <form
           class="contact-form animate-slide-left"
-          @submit.prevent="submitForm"
+          @submit.prevent="handleSubmit"
         >
           <h2>Send us a Message</h2>
           <div class="form-group" v-for="field in formFields" :key="field.id">
@@ -40,7 +40,9 @@
               v-model="form[field.id]"
               :placeholder="field.placeholder"
               required
+              @blur="validateField(field.id)"
             />
+            <span class="error" v-if="formErrors[field.id]">{{ formErrors[field.id] }}</span>
           </div>
           <button type="submit" class="submit-btn">
             <span>Send Message</span>
@@ -60,7 +62,6 @@ import Footer from "@/components/Footer.vue";
 import ContactInfoItem from "@/components/ContactInfoItem.vue";
 
 interface FormData {
-  [key: string]: string; // Add index signature
   name: string;
   email: string;
   message: string;
@@ -84,12 +85,12 @@ const form = ref<FormData>({
 
 const formErrors = ref<{ [key: string]: string }>({});
 
-const validateField = (key: keyof typeof form) => {
+const validateField = (key: keyof FormData) => {
   if (!form.value[key]) {
-    formErrors.value[key as string] = `${key} is required`;
+    formErrors.value[String(key)] = `${key} is required`;
   } else {
-    delete formErrors.value[key as string];
-  }
+    delete formErrors.value[String(key)];
+  };
 };
 
 const contactInfo = [
@@ -133,9 +134,13 @@ const formFields: FormField[] = [
   },
 ];
 
-const submitForm = () => {
-  showNotification("Message sent successfully!", "success");
-  form.value = { name: "", email: "", message: "" };
+const handleSubmit = () => {
+  // Validate all fields before submission
+  Object.keys(form.value).forEach((key) => validateField(key as keyof FormData));
+  if (Object.keys(formErrors.value).length === 0) {
+    showNotification("Message sent successfully!", "success");
+    form.value = { name: "", email: "", message: "" };
+  }
 };
 </script>
 

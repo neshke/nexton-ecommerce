@@ -40,7 +40,7 @@
 import { ref } from "vue";
 import type { Product } from "@/types";
 
-const props = defineProps<{
+defineProps<{
   products: Product[];
   isLoading?: boolean;
 }>();
