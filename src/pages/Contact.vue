@@ -57,11 +57,26 @@
 import { ref } from "vue";
 import { useNotification } from "@/utils/notifications";
 import Footer from "@/components/Footer.vue";
-import ContactInfoItem from "@/components/ContactInfoItem.vue"; // Create this component
+import ContactInfoItem from "@/components/ContactInfoItem.vue";
+
+interface FormData {
+  [key: string]: string; // Add index signature
+  name: string;
+  email: string;
+  message: string;
+}
+
+interface FormField {
+  id: keyof FormData;
+  label: string;
+  inputType?: string;
+  placeholder: string;
+  type: 'input' | 'textarea';
+}
 
 const { showNotification } = useNotification();
 
-const form = ref({
+const form = ref<FormData>({
   name: "",
   email: "",
   message: "",
@@ -85,7 +100,7 @@ const contactInfo = [
   },
 ];
 
-const formFields = [
+const formFields: FormField[] = [
   {
     id: "name",
     label: "Name",
