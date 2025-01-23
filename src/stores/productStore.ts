@@ -33,6 +33,26 @@ export const useProductStore = defineStore("products", () => {
   });
   const error = ref<string | null>(null);
 
+  // Modified initialize function to fetch if no stored products
+  const initializeStore = async () => {
+    const savedProducts = localStorage.getItem('products');
+    const savedCart = localStorage.getItem('cart');
+    
+    if (savedProducts) {
+      products.value = JSON.parse(savedProducts);
+    } else {
+      await fetchProducts(); // Fetch if no stored products
+    }
+    
+    if (savedCart) cart.value = JSON.parse(savedCart);
+  };
+
+  // Save state to localStorage
+  const saveToLocalStorage = () => {
+    localStorage.setItem('products', JSON.stringify(products.value));
+    localStorage.setItem('cart', JSON.stringify(cart.value));
+  };
+
   // getters
   const getProducts = computed(() => products.value);
   const getCartItems = computed(() => cart.value);
@@ -61,6 +81,7 @@ export const useProductStore = defineStore("products", () => {
         Array.isArray(response.data.data)
       ) {
         products.value = response.data.data.map(normalizeProduct);
+        saveToLocalStorage(); // Save after successful fetch
         console.log("Products fetched:", products.value);
       } else {
         throw new Error(response.data.message || "Failed to fetch products");
@@ -171,24 +192,31 @@ export const useProductStore = defineStore("products", () => {
     }
   }
 
-  function addToCart({ product, quantity = 1 }: { product: Product; quantity: number }) {
+  function addToCart({
+    product,
+    quantity = 1,
+  }: {
+    product: Product;
+    quantity: number;
+  }) {
     const existingItem = cart.value.find((item) => item.id === product.id);
 
     if (existingItem) {
       existingItem.quantity += quantity;
-      return;
+    } else {
+      cart.value.push({
+        ...product,
+        quantity,
+      });
     }
-
-    cart.value.push({
-      ...product,
-      quantity,
-    });
+    saveToLocalStorage();
   }
 
   function removeFromCart(productId: number) {
     const index = cart.value.findIndex((item) => item.id === productId);
     if (index > -1) {
       cart.value.splice(index, 1);
+      saveToLocalStorage();
     }
   }
 
@@ -196,12 +224,17 @@ export const useProductStore = defineStore("products", () => {
     const item = cart.value.find((item) => item.id === productId);
     if (item && quantity > 0) {
       item.quantity = quantity;
+      saveToLocalStorage();
     }
   }
 
   function clearCart() {
     cart.value = [];
+    saveToLocalStorage();
   }
+
+  // Initialize store when created
+  initializeStore();
 
   return {
     // state
@@ -223,5 +256,6 @@ export const useProductStore = defineStore("products", () => {
     removeFromCart,
     updateCartQuantity,
     clearCart,
+    initializeStore,
   };
 });

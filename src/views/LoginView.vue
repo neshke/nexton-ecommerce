@@ -4,33 +4,52 @@
       <h2>Welcome Back</h2>
       <form @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
-          <input type="email" v-model="email" placeholder="Email" required>
+          <input type="email" v-model="email" placeholder="Email" required />
         </div>
         <div class="form-group">
-          <input type="password" v-model="password" placeholder="Password" required>
+          <input
+            type="password"
+            v-model="password"
+            placeholder="Password"
+            required
+          />
         </div>
-        <button type="submit" class="submit-btn">Login</button>
+        <div v-if="authStore.error" class="error-message">
+          {{ authStore.error }}
+        </div>
+        <button type="submit" class="submit-btn" :disabled="authStore.loading">
+          {{ authStore.loading ? "Logging in..." : "Login" }}
+        </button>
       </form>
       <p class="auth-switch">
-        Don't have an account? 
+        Don't have an account?
         <router-link to="/register">Register here</router-link>
       </p>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+<script setup lang="ts">
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/authStore";
 
 const router = useRouter();
-const email = ref('');
-const password = ref('');
+const authStore = useAuthStore();
+const email = ref("");
+const password = ref("");
 
 const handleLogin = async () => {
-  // Add your login logic here
-  console.log('Login attempt:', { email: email.value, password: password.value });
-  router.push('/');
+  const success = await authStore.login({
+    email: email.value,
+    password: password.value,
+  });
+
+  console.log(success);
+
+  if (success) {
+    router.push("/");
+  }
 };
 </script>
 
@@ -127,5 +146,12 @@ input:focus {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.error-message {
+  color: #ef4444;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
 }
 </style>

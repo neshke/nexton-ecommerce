@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from "vue-router";
 import Home from "../pages/Home.vue";
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
+import Profile from '../components/Profile.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -49,6 +50,11 @@ const routes: RouteRecordRaw[] = [
     path: "/register",
     name: "register",
     component: RegisterView,
+  },
+  {
+    path: "/profile",
+    name: "profile",
+    component: Profile,
   },
   {
     path: "/:pathMatch(.*)*",

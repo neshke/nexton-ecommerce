@@ -1,12 +1,11 @@
 <template>
   <div class="products-page">
     <main class="main-content">
-      <header class="hero animate-fade-in">
-        <div class="hero-content">
-          <h1 class="animate-slide-down">Our <span class="highlight">Products</span></h1>
-          <p class="animate-slide-up">Discover amazing products curated just for you</p>
-        </div>
-      </header>
+      <Header
+        title="Our"
+        highlighted="Products"
+        subtitle="Discover amazing products curated just for you"
+      />
 
       <section class="products-section animate-fade-in">
         <div class="container">
@@ -55,18 +54,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeMount, computed } from "vue";
 import { useProductStore } from "@/stores/productStore";
 import { useNotification } from "@/utils/notifications";
+import Header from '@/components/Header.vue';
 import ProductList from "@/components/Products/ProductList.vue";
-import ProductDetailsModal from '@/components/Products/ProductDetailsModal.vue';
-import Footer from '@/components/Footer.vue';
+import ProductDetailsModal from "@/components/Products/ProductDetailsModal.vue";
+import Footer from "@/components/Footer.vue";
 import type { Product } from "@/types";
 
-const store = useProductStore();
+const productsStore = useProductStore();
 const { notification, showNotification } = useNotification();
 const email = ref("");
-const products = ref<Product[]>([]);
+const products = computed(() => {
+  return productsStore.getProducts;
+});
 const loading = ref(false);
 const error = ref<string | null>(null);
 const showProductModal = ref(false);
@@ -75,8 +77,6 @@ const selectedProduct = ref<Product | null>(null);
 onMounted(async () => {
   try {
     loading.value = true;
-    await store.fetchProducts();
-    products.value = store.getProducts;
   } catch (err) {
     error.value = "Failed to load products";
     console.error("Failed to fetch products:", err);
@@ -85,11 +85,32 @@ onMounted(async () => {
   }
 });
 
-const handleAddToCart = ({ product, quantity }: { product: Product; quantity: number }) => {
+onBeforeMount(async () => {
+  try {
+    loading.value = true;
+    // Check if products exist, if not fetch them
+    if (!products.value || products.value.length === 0) {
+      await productsStore.fetchProducts();
+    }
+  } catch (err) {
+    error.value = "Failed to load products";
+    console.error("Failed to fetch products:", err);
+  } finally {
+    loading.value = false;
+  }
+});
+
+const handleAddToCart = ({
+  product,
+  quantity,
+}: {
+  product: Product;
+  quantity: number;
+}) => {
   if (!product) return;
 
   try {
-    store.addToCart({ product, quantity });
+    productsStore.addToCart({ product, quantity });
     showNotification("Product added to cart", "success");
   } catch (error) {
     showNotification("Failed to add product to cart", "error");
@@ -114,7 +135,6 @@ const closeProductModal = () => {
   showProductModal.value = false;
   selectedProduct.value = null;
 };
-
 </script>
 
 <style scoped>
@@ -126,10 +146,8 @@ const closeProductModal = () => {
 
 .main-content {
   flex: 1;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0;
   width: 100%;
+  padding: 0;
 }
 
 .hero {
@@ -156,13 +174,14 @@ const closeProductModal = () => {
 }
 
 .products-section {
-  padding: 4rem 2rem;
+  padding: 4rem 0;
   background: #f8f9fa;
+  width: 100%;
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  padding: 0 2rem;
 }
 
 .newsletter {
@@ -173,8 +192,10 @@ const closeProductModal = () => {
 }
 
 .newsletter-content {
-  max-width: 600px;
+  width: 100%;
+  max-width: 800px;
   margin: 0 auto;
+  padding: 0 2rem;
 }
 
 .newsletter-form {

@@ -1,20 +1,24 @@
 <template>
   <div class="home">
     <main class="main-content">
-      <header class="hero animate-fade-in">
-        <div class="hero-content">
-          <h1>Welcome to our <span class="highlight">eCommerce Store</span></h1>
-          <p>Discover amazing products curated just for you</p>
-          <div class="hero-buttons">
+      <Header>
+        <template #title>
+          Welcome to our <span class="highlight">eCommerce Store</span>
+        </template>
+        <template #subtitle>
+          Discover amazing products curated just for you
+        </template>
+        <template #actions>
+          <div class="hero-buttons animate-fade-in" style="--delay: 0.9s">
             <button class="hero-btn primary" @click="$router.push('/products')">
               Shop Now
             </button>
-            <button class="hero-btn secondary" @click="$router.push('/login')">
+            <button class="hero-btn secondary" @click="handleGetStarted">
               Get Started
             </button>
           </div>
-        </div>
-      </header>
+        </template>
+      </Header>
       <section class="sales-window animate-slide-up">
         <h2>Featured Products</h2>
         <div v-if="loading" class="loading">Loading featured products...</div>
@@ -99,13 +103,17 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useProductStore } from "@/stores/productStore";
+import { useAuthStore } from "@/stores/authStore"; // Add this import
 import { FEATURES, TESTIMONIALS } from "@/constants/home";
 import { PLACEHOLDER_IMAGE } from "@/utils/constants";
+import Header from '@/components/Header.vue';
 import Footer from "@/components/Footer.vue";
 import type { Product } from "@/types";
 
 const router = useRouter();
-const store = useProductStore();
+const productsStore = useProductStore();
+const authStore = useAuthStore(); // Add this line
+
 const featuredProducts = ref<Product[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -114,11 +122,17 @@ const features = ref(FEATURES);
 onMounted(async () => {
   try {
     loading.value = true;
-    await store.fetchProducts();
-    featuredProducts.value = store.getProducts.slice(0, 4).map((product) => ({
-      ...product,
-      image_url: product.image_url || PLACEHOLDER_IMAGE,
-    }));
+    // Check if products exist, if not fetch them
+    if (!productsStore.getProducts || productsStore.getProducts.length === 0) {
+      await productsStore.fetchProducts();
+    }
+    // Get featured products from the store
+    featuredProducts.value = productsStore.getProducts
+      .slice(0, 4)
+      .map((product) => ({
+        ...product,
+        image_url: product.image_url || PLACEHOLDER_IMAGE,
+      }));
   } catch (err) {
     error.value = "Failed to load featured products";
     console.error("Failed to fetch products:", err);
@@ -160,6 +174,15 @@ const testimonials = ref(
     avatar: PLACEHOLDER_IMAGE,
   }))
 );
+
+// Add this function
+const handleGetStarted = () => {
+  if (authStore.isAuthenticated()) {
+    router.push("/products");
+  } else {
+    router.push("/login");
+  }
+};
 </script>
 
 <style scoped>
@@ -171,10 +194,13 @@ const testimonials = ref(
 
 .main-content {
   flex: 1;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0;
   width: 100%;
+  padding: 0;
+}
+
+.container {
+  width: 100%;
+  padding: 0 2rem;
 }
 
 .hero {
@@ -267,7 +293,8 @@ const testimonials = ref(
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
-  padding: 0 1rem;
+  padding: 0 2rem;
+  width: 100%;
 }
 
 .feature-item {
@@ -305,6 +332,7 @@ const testimonials = ref(
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   padding: 2rem;
+  width: 100%;
 }
 
 .testimonial-item {
@@ -402,8 +430,7 @@ const testimonials = ref(
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: clamp(1rem, 3vw, 2rem);
   padding: clamp(1rem, 3vw, 2rem);
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .sales-item {

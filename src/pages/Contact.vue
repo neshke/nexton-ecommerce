@@ -1,12 +1,10 @@
 <template>
   <div class="contact-page">
-    <header class="hero animate-fade-in">
-      <div class="hero-content">
-        <h1>Contact <span class="highlight">Us</span></h1>
-        <p>Get in touch with our team</p>
-      </div>
-    </header>
-
+    <Header
+      title="Contact"
+      highlighted="Us"
+      subtitle="Get in touch with our team"
+    />
     <main class="main-content container">
       <div class="contact-grid">
         <!-- Info Section -->
@@ -42,7 +40,9 @@
               required
               @blur="validateField(field.id)"
             />
-            <span class="error" v-if="formErrors[field.id]">{{ formErrors[field.id] }}</span>
+            <span class="error" v-if="formErrors[field.id]">{{
+              formErrors[field.id]
+            }}</span>
           </div>
           <button type="submit" class="submit-btn">
             <span>Send Message</span>
@@ -59,6 +59,7 @@
 import { ref } from "vue";
 import { useNotification } from "@/utils/notifications";
 import Footer from "@/components/Footer.vue";
+import Header from '@/components/Header.vue';
 import ContactInfoItem from "@/components/ContactInfoItem.vue";
 
 interface FormData {
@@ -72,7 +73,7 @@ interface FormField {
   label: string;
   inputType?: string;
   placeholder: string;
-  type: 'input' | 'textarea';
+  type: "input" | "textarea";
 }
 
 const { showNotification } = useNotification();
@@ -90,7 +91,7 @@ const validateField = (key: keyof FormData) => {
     formErrors.value[String(key)] = `${key} is required`;
   } else {
     delete formErrors.value[String(key)];
-  };
+  }
 };
 
 const contactInfo = [
@@ -136,7 +137,9 @@ const formFields: FormField[] = [
 
 const handleSubmit = () => {
   // Validate all fields before submission
-  Object.keys(form.value).forEach((key) => validateField(key as keyof FormData));
+  Object.keys(form.value).forEach((key) =>
+    validateField(key as keyof FormData)
+  );
   if (Object.keys(formErrors.value).length === 0) {
     showNotification("Message sent successfully!", "success");
     form.value = { name: "", email: "", message: "" };
@@ -148,6 +151,19 @@ const handleSubmit = () => {
 .contact-page {
   min-height: 100vh;
   background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix footer to always be at bottom */
+:deep(.footer) {
+  margin-top: auto;
 }
 
 .hero {
@@ -167,8 +183,7 @@ const handleSubmit = () => {
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   padding: clamp(2rem, 5vw, 4rem);
 }
 
@@ -177,6 +192,10 @@ const handleSubmit = () => {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
   gap: clamp(2rem, 5vw, 4rem);
   align-items: start;
+  width: 100%;
+  max-width: 2000px;
+  margin: 0 auto;
+  padding: 0 2rem;
 }
 
 .contact-form {
@@ -273,5 +292,38 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 2rem; /* Add consistent gap between items */
+}
+
+/* Add these new animation classes */
+.animate-slide-down {
+  animation: slideDown 1s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-up {
+  animation: slideUp 1s ease-out 0.3s backwards;
+}
+
+/* Add these new keyframes */
+@keyframes slideDown {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 </style>

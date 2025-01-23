@@ -1,0 +1,89 @@
+.auth-button {
+  padding: 0.7rem 1.5rem !important;
+  border-radius: 30px !important;
+  transition: all 0.3s ease !important;
+  font-weight: 700 !important; /* increased font weight */
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: center;
+  background-color: #6366f1 !important;
+  color: #ffffff !important; /* explicit white color for better contrast */
+  border: 2px solid transparent !important;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 0.95rem !important;
+}
+
+.auth-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2) !important;
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+}
+
+.hero {
+  padding: clamp(3rem, 8vw, 6rem) 1rem;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff; /* explicit white color for better contrast */
+  text-align: center;
+  font-weight: 600; /* increased font weight */
+}
+
+.highlight {
+  color: #ffd700;
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .auth-button {
+    padding: 0.6rem 1.2rem !important;
+    min-width: 90px;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-button {
+    width: 100%;
+    display: block;
+    padding: 1rem !important;
+    margin: 0;
+    margin-bottom: 0 !important;
+    text-align: center;
+    border-radius: 0 !important;
+  }
+
+  .auth-button:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background-color: #4f46e5 !important;
+  }
+}
+
+/* Add avatar styling */
+.avatar {
+  background-color: #ffffff !important; /* white background for avatar */
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  color: #6366f1 !important;
+  font-weight: 700 !important;
+}

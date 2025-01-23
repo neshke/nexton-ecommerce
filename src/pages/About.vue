@@ -1,11 +1,10 @@
 <template>
   <div class="about-page">
-    <header class="hero animate-fade-in">
-      <div class="hero-content">
-        <h1 class="animate-slide-down">About <span class="highlight">Us</span></h1>
-        <p class="animate-slide-up">Discover our story and mission</p>
-      </div>
-    </header>
+    <Header
+      title="About"
+      highlighted="Us"
+      subtitle="Discover our story and mission"
+    />
 
     <main class="main-content">
       <section class="about-section">
@@ -44,6 +43,7 @@
 
 <script setup lang="ts">
 import Footer from '@/components/Footer.vue';
+import Header from '@/components/Header.vue';
 </script>
 
 <style scoped>

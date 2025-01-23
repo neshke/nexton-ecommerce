@@ -1,13 +1,13 @@
 <template>
   <div class="product-detail">
-    <button class="close-btn" @click="goBack">
-      ✕
-    </button>
-    <div v-if="loading" class="loading animate-fade-in">Loading product details...</div>
+    <button class="close-btn" @click="goBack">✕</button>
+    <div v-if="loading" class="loading animate-fade-in">
+      Loading product details...
+    </div>
     <div v-else-if="error" class="error animate-fade-in">{{ error }}</div>
     <div v-else-if="product" class="product-container animate-slide-up">
       <div class="product-image animate-fade-in">
-        <div 
+        <div
           class="image-container"
           @mousemove="handleZoom"
           @mouseleave="isZoomed = false"
@@ -17,9 +17,9 @@
             :src="product.image_url || PLACEHOLDER_IMAGE"
             :alt="product.name"
             @error="handleImageError"
-            :class="{ 
+            :class="{
               'is-placeholder': isPlaceholder(product.image_url),
-              'zoom-image': !isPlaceholder(product.image_url)
+              'zoom-image': !isPlaceholder(product.image_url),
             }"
             ref="productImage"
           />
@@ -71,7 +71,7 @@ const { notification, showNotification } = useNotification();
 // Use computed property to get product from store
 const product = computed(() => {
   const productId = Number(route.params.id);
-  return store.getProducts.find(p => p.id === productId) || null;
+  return store.getProducts.find((p) => p.id === productId) || null;
 });
 
 onMounted(async () => {
@@ -132,21 +132,22 @@ const isPlaceholder = (url: string | null): boolean => {
 
 // Add this new method to handle price formatting
 const formatPrice = (price: number | undefined) => {
-  return price !== undefined ? `$${price.toFixed(2)}` : 'Price not available';
+  return price !== undefined ? `$${price.toFixed(2)}` : "Price not available";
 };
 
 const isZoomed = ref(false);
 const productImage = ref<HTMLImageElement | null>(null);
 
 const handleZoom = (event: MouseEvent) => {
-  if (!productImage.value || isPlaceholder(product.value?.image_url || null)) return;
-  
+  if (!productImage.value || isPlaceholder(product.value?.image_url || null))
+    return;
+
   const image = productImage.value;
   const { left, top, width, height } = image.getBoundingClientRect();
-  
+
   const x = (event.clientX - left) / width;
   const y = (event.clientY - top) / height;
-  
+
   image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
   isZoomed.value = true;
 };
@@ -425,7 +426,7 @@ const goBack = () => {
   .zoom-image {
     cursor: default;
   }
-  
+
   .is-zoomed .zoom-image {
     transform: none;
   }
