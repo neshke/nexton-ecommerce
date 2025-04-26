@@ -13,51 +13,77 @@
 
       <nav class="dropdown-menu">
         <router-link to="/profile" class="menu-item" @click="closeMenu">
-          <i class="fas fa-user"></i> Profile
-        </router-link>
-        <router-link to="/settings" class="menu-item" @click="closeMenu">
-          <i class="fas fa-cog"></i> Settings
+          <i class="fas fa-user"></i> Profil
         </router-link>
         <button class="menu-item logout" @click="handleLogout">
-          <i class="fas fa-sign-out-alt"></i> Logout
+          <i class="fas fa-sign-out-alt"></i> Odjava
         </button>
       </nav>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 
-const props = defineProps<{ username: string }>();
-const emit = defineEmits<{ (e: "close"): void }>();
+export default {
+  name: 'ProfileDropdown',
 
-const router = useRouter();
-const authStore = useAuthStore();
-const isOpen = ref(false);
+  props: {
+    username: {
+      type: String,
+      required: true
+    }
+  },
 
-const toggleMenu = () => (isOpen.value = !isOpen.value);
-const closeMenu = () => {
-  isOpen.value = false;
-  emit("close");
-};
+  emits: ['close'],
 
-const handleLogout = async () => {
-  authStore.logout();
-  closeMenu();
-  router.push("/login");
-};
+  setup(_props, { emit }) {
+    const router = useRouter();
+    const authStore = useAuthStore();
+    const isOpen = ref(false);
 
-const handleClickOutside = (event: MouseEvent) => {
-  if (!(event.target as HTMLElement).closest(".profile-container")) {
-    closeMenu();
+    // Funkcija za otvaranje/zatvaranje menija.
+    const toggleMenu = () => {
+      isOpen.value = !isOpen.value;
+    };
+
+    // Funkcija za zatvaranje menija.
+    const closeMenu = () => {
+      isOpen.value = false;
+      emit('close');
+    };
+
+    // Funkcija za odjavu korisnika.
+    const handleLogout = async () => {
+      await authStore.logout();
+      closeMenu();
+      router.push('/');
+    };
+
+    // Rukovanje klikom van komponente da bi se zatvorila.
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!(event.target as HTMLElement).closest('.profile-container')) {
+        closeMenu();
+      }
+    };
+
+    // Lifecycle hooks
+    // Dodaje osluškivač događaja za klik van komponente kada se komponenta montira.
+    onMounted(() => document.addEventListener('click', handleClickOutside));
+    // Uklanja osluškivač događaja kada se komponenta demontira.
+    onUnmounted(() => document.removeEventListener('click', handleClickOutside));
+
+    return {
+      isOpen, // Stanje menija (otvoren/zatvoren)
+      toggleMenu, // Funkcija za otvaranje/zatvaranje
+      closeMenu, // Funkcija za zatvaranje
+      handleLogout // Funkcija za odjavu
+    };
   }
 };
-
-onMounted(() => document.addEventListener("click", handleClickOutside));
-onUnmounted(() => document.removeEventListener("click", handleClickOutside));
 </script>
 
 <style scoped>
@@ -139,6 +165,7 @@ onUnmounted(() => document.removeEventListener("click", handleClickOutside));
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

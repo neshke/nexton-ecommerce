@@ -18,12 +18,19 @@
   </header>
 </template>
 
-<script setup lang="ts">
-defineProps<{
-  title?: string;
-  highlighted?: string;
-  subtitle?: string;
-}>();
+<script lang="ts">
+export default {
+  name: "Header",
+  props: {
+    title: String,
+    highlighted: String,
+    subtitle: String
+  },
+  setup() {
+    // No additional setup logic needed, as this was a simple component
+    return {}
+  }
+}
 </script>
 
 <style scoped>
@@ -58,11 +65,12 @@ defineProps<{
 }
 
 @keyframes fadeIn {
-  from { 
-    opacity: 0; 
+  from {
+    opacity: 0;
   }
-  to { 
-    opacity: 1; 
+
+  to {
+    opacity: 1;
   }
 }
 
@@ -71,6 +79,7 @@ defineProps<{
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -82,6 +91,7 @@ defineProps<{
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -111,6 +121,7 @@ defineProps<{
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .animate-fade-in,
   .animate-slide-down,
   .animate-slide-up {

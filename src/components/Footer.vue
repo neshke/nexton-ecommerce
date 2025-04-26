@@ -1,13 +1,23 @@
 <template>
   <footer class="footer">
-    <p>&copy; {{ currentYear }} eCommerce Store. All rights reserved.</p>
+    <p>&copy; {{ currentYear }} eCommerce Prodavnica. Sva prava zadržana.</p>
   </footer>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { computed } from 'vue';
 
-const currentYear = computed(() => new Date().getFullYear());
+export default {
+  name: "Footer",
+  setup() {
+    // Izračunata vrednost koja vraća trenutnu godinu
+    const currentYear = computed(() => new Date().getFullYear());
+
+    return {
+      currentYear
+    }
+  }
+}
 </script>
 
 <style scoped>

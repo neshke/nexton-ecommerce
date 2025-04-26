@@ -6,15 +6,21 @@
         <i class="fas fa-camera"></i>
       </button>
     </div>
-    <h2>{{ user?.name || 'Guest User' }}</h2>
-    <p>{{ user?.email || 'No email provided' }}</p>
+    <h2>{{ user?.name || 'Gost' }}</h2>
+    <p>{{ user?.email || 'Email nije dostupan' }}</p>
   </div>
 </template>
 
-<script setup lang="ts">
-defineProps<{
-  user: { name?: string; email?: string } | null;
-}>();
+<script lang="ts">
+export default {
+  name: "UserCard",
+  props: {
+    user: {
+      type: Object as () => { name?: string; email?: string } | null,
+      default: null
+    }
+  }
+}
 </script>
 
 <style scoped>

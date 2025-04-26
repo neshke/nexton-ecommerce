@@ -1,5 +1,4 @@
 import { useAuthStore } from "@/stores/authStore";
-import { useRouter } from "vue-router";
 import { ref } from "vue";
 
 export class ActivityTracker {
@@ -7,7 +6,8 @@ export class ActivityTracker {
   private timeoutId: number | null = null;
   private isTracking = ref(false);
 
-  private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+  // Set inactivity timeout to 15 minutes
+  private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
   private constructor() {
     // Remove initialization from constructor
@@ -21,7 +21,7 @@ export class ActivityTracker {
   }
 
   private resetInactivityTimer(): void {
-    console.log("Resetting inactivity timer");
+    console.info("Resetting inactivity timer");
 
     if (this.timeoutId) {
       window.clearTimeout(this.timeoutId);
@@ -35,11 +35,11 @@ export class ActivityTracker {
 
   private handleInactivity(): void {
     const authStore = useAuthStore();
-    if (authStore.isAuthenticated()) {
+    if (authStore.isAuthenticated) {
       console.log("Logging out due to inactivity");
-      authStore.logout();
-      this.stopTracking();
-      window.location.href = "/login";
+      authStore.logout().then(() => {
+        window.location.href = "/login?reason=inactivity";
+      });
     }
   }
 
@@ -57,12 +57,14 @@ export class ActivityTracker {
       "click",
     ];
 
+    // Remove existing event listeners if any
+    this.stopTracking();
+
+    const boundResetTimer = this.resetInactivityTimer.bind(this);
+    
+    // Add event listeners with properly bound context
     events.forEach((event) => {
-      document.addEventListener(event, () => {
-        if (this.isTracking.value) {
-          this.resetInactivityTimer();
-        }
-      });
+      document.addEventListener(event, boundResetTimer);
     });
 
     // Initial timer setup
@@ -76,6 +78,21 @@ export class ActivityTracker {
       window.clearTimeout(this.timeoutId);
       this.timeoutId = null;
     }
+    
+    // Remove all event listeners
+    const events = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+    
+    const boundResetTimer = this.resetInactivityTimer.bind(this);
+    events.forEach((event) => {
+      document.removeEventListener(event, boundResetTimer);
+    });
   }
 }
 

@@ -1,10 +1,12 @@
 <template>
   <nav class="navbar">
     <router-link to="/" class="logo">NextOn</router-link>
-    <div class="hamburger" :class="{ active: isMenuOpen }" @click="toggleMenu">
-      <span></span>
-      <span></span>
-      <span></span>
+    <div class="hamburger-wrapper" @click="toggleMenu">
+      <button class="hamburger" :class="{ active: isMenuOpen }" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
     <ul class="nav-links" :class="{ active: isMenuOpen }">
       <li v-for="link in navLinks" :key="link.path">
@@ -12,16 +14,24 @@
           {{ link.name }}
         </router-link>
       </li>
+
+      <!-- Add cart link with item count -->
+      <li class="cart-link">
+        <router-link to="/cart" @click="closeMenu">
+          <span class="cart-icon">
+            <i class="fas fa-shopping-cart"></i>
+            <span v-if="cartStore.itemCount > 0" class="cart-count">{{ cartStore.itemCount }}</span>
+          </span>
+        </router-link>
+      </li>
+
       <li class="auth-links">
-        <template v-if="authStore.isAuthenticated()">
-          <ProfileDropdown
-            :username="authStore.user?.username || 'Profile'"
-            @close="closeMenu"
-          />
+        <template v-if="authStore.isAuthenticated">
+          <ProfileDropdown :username="authStore.user?.username || 'Profile'" @close="closeMenu" />
         </template>
         <template v-else>
           <router-link to="/login" class="auth-button" @click="closeMenu">
-            Login
+            Prijava
           </router-link>
         </template>
       </li>
@@ -29,30 +39,52 @@
   </nav>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { ref } from "vue";
 import { useAuthStore } from "@/stores/authStore";
+import { useCartStore } from "@/stores/cartStore";
 import ProfileDropdown from "./ProfileDropdown.vue";
 
-const authStore = useAuthStore();
-const isMenuOpen = ref(false);
+export default {
+  name: 'Navbar',
+  components: {
+    ProfileDropdown
+  },
+  setup() {
+    const authStore = useAuthStore();
+    const cartStore = useCartStore();
+    const isMenuOpen = ref(false);
 
-const navLinks = [
-  { path: '/', name: 'Home' },
-  { path: '/products', name: 'Products' },
-  { path: '/about', name: 'About' },
-  { path: '/contact', name: 'Contact' }
-];
+    // Navigacioni linkovi
+    const navLinks = [
+      { path: "/", name: "Početna" },
+      { path: "/products", name: "Proizvodi" },
+      { path: "/about", name: "O nama" },
+      { path: "/contact", name: "Kontakt" },
+    ];
 
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value;
-  document.body.style.overflow = isMenuOpen.value ? "hidden" : "auto";
-};
+    // Funkcija za uključivanje/isključivanje menija
+    const toggleMenu = () => {
+      isMenuOpen.value = !isMenuOpen.value;
+      document.body.style.overflow = isMenuOpen.value ? "hidden" : "auto";
+    };
 
-const closeMenu = () => {
-  isMenuOpen.value = false;
-  document.body.style.overflow = "auto";
-};
+    // Funkcija za zatvaranje menija
+    const closeMenu = () => {
+      isMenuOpen.value = false;
+      document.body.style.overflow = "auto";
+    };
+
+    return {
+      authStore,
+      cartStore,
+      isMenuOpen,
+      navLinks,
+      toggleMenu,
+      closeMenu
+    };
+  }
+}
 </script>
 
 <style scoped>
@@ -70,6 +102,7 @@ const closeMenu = () => {
 }
 
 .logo {
+  font-family: 'LeckerliOne', cursive;
   font-size: 1.8em;
   font-weight: 700;
   color: #6366f1;
@@ -124,11 +157,29 @@ const closeMenu = () => {
   max-width: none !important;
 }
 
-.hamburger {
+.hamburger-wrapper {
+  position: relative;
+  z-index: 1002;
+  /* Higher than other elements */
   display: none;
 }
 
-@media (max-width: 768px) {
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+@media (max-width: 960px) {
+  .hamburger-wrapper {
+    display: block;
+  }
+
   .hamburger {
     display: flex;
     flex-direction: column;
@@ -136,6 +187,11 @@ const closeMenu = () => {
     cursor: pointer;
     z-index: 1001;
     padding: 8px;
+    /* Increase hit area */
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
   }
 
   .hamburger span {
@@ -167,6 +223,8 @@ const closeMenu = () => {
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
     box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    /* Lower than hamburger */
   }
 
   .nav-links.active {
@@ -199,6 +257,51 @@ const closeMenu = () => {
     width: 100%;
     padding: 1rem 0;
     border-top: 1px solid #e5e7eb;
+  }
+}
+
+/* Add cart icon styles */
+.cart-link {
+  margin-left: 0.5rem;
+}
+
+.cart-icon {
+  position: relative;
+  font-size: 1.25rem;
+  color: #4b5563;
+  transition: color 0.3s ease;
+}
+
+.cart-icon:hover {
+  color: #6366f1;
+}
+
+.cart-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #6366f1;
+  color: white;
+  font-size: 0.7rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+/* Ensure cart link is visible on mobile */
+@media (max-width: 960px) {
+  .cart-link {
+    width: 100%;
+    text-align: center;
+    margin: 0.5rem 0;
+  }
+
+  .cart-icon {
+    font-size: 1.5rem;
   }
 }
 </style>

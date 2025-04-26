@@ -3,17 +3,14 @@
     <header class="hero">
       <div class="hero-content">
         <h1 class="animate-slide-up">
-          My <span class="highlight">Profile</span>
+          Moj <span class="highlight">Profil</span>
         </h1>
         <p class="hero-subtitle animate-slide-up" style="animation-delay: 0.2s">
           {{ welcomeMessage }}
         </p>
         <div class="hero-buttons animate-slide-up" style="animation-delay: 0.4s">
           <button class="hero-btn primary" @click="handleEditProfile">
-            Edit Profile
-          </button>
-          <button class="hero-btn secondary" @click="handleSettings">
-            Settings
+            Izmeni Profil
           </button>
         </div>
       </div>
@@ -28,41 +25,60 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { useAuthStore } from "@/stores/authStore";
-import { useRouter } from "vue-router";
-import { computed, onMounted } from "vue";
-import UserCard from "./profile/UserCard.vue";
-import AccountActions from "./profile/AccountActions.vue";
+<script lang="ts">
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
+import { useNotification } from '@/utils/notifications';
+import UserCard from '@/components/profile/UserCard.vue';
+import AccountActions from '@/components/profile/AccountActions.vue';
 
-const authStore = useAuthStore();
-const router = useRouter();
-const user = computed(() => authStore.user);
+export default {
+  name: "Profile",
+  components: {
+    UserCard,
+    AccountActions
+  },
+  setup() {
+    const router = useRouter();
+    const authStore = useAuthStore();
+    const { showNotification } = useNotification();
 
-const welcomeMessage = computed(() => 
-  user.value?.username 
-    ? `Welcome back, ${user.value.username}!` 
-    : 'Manage your account and preferences'
-);
+    // Računanje korisničkih podataka
+    const user = computed(() => authStore.user);
 
-const handleLogout = () => {
-  authStore.logout();
-  router.push("/login");
-};
+    // Generisanje prilagođene poruke dobrodošlice
+    const welcomeMessage = computed(() => {
+      if (!user.value?.name) return 'Dobrodošli na vašu profilnu tablu';
+      const hour = new Date().getHours();
 
-const handleEditProfile = () => {
-  // Implement edit profile logic
-};
+      if (hour < 12) return `Dobro jutro, ${user.value.name}!`;
+      if (hour < 18) return `Dobar dan, ${user.value.name}!`;
+      return `Dobro veče, ${user.value.name}!`;
+    });
 
-const handleSettings = () => {
-  // Implement settings logic
-};
+    // Funkcija za odjavu korisnika
+    const handleLogout = async () => {
+      await authStore.logout();
+      showNotification('Uspešno ste se odjavili sa vašeg naloga.', 'success');
+      router.push('/');
+    };
 
-onMounted(() => {
-  if (!authStore.isAuthenticated()) {
-    router.push("/login");
+    // Funkcija za uređivanje profila
+    const handleEditProfile = () => {
+      // Ovde će se implementirati logika za uređivanje profila
+      console.log('Funkcija za izmenu profila uskoro dolazi');
+      showNotification('Funkcija za izmenu profila uskoro dolazi.', 'info');
+    };
+
+    return {
+      user,
+      welcomeMessage,
+      handleLogout,
+      handleEditProfile
+    };
   }
-});
+}
 </script>
 
 <style scoped>
@@ -157,6 +173,7 @@ onMounted(() => {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

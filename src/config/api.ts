@@ -1,16 +1,28 @@
-const BASE_URL =
-  import.meta.env.VITE_API_URL || "http://127.0.0.1/nexton-ecommerce";
+// API URLs
+const BASE_URL = "http://192.168.1.2:8080";
 
 export const API_URLS = {
   BASE: BASE_URL,
-  PRODUCTS: {
-    READ: `${BASE_URL}/api/products/read.php`,
-    CREATE: `${BASE_URL}/api/products/create.php`,
-    UPLOAD_IMAGE: `${BASE_URL}/api/products/upload.php`,
-  },
+  UPLOADS: `${BASE_URL}/nexton/api/uploads/`,
   AUTH: {
-    LOGIN: `${BASE_URL}/api/auth/login.php`,
-    REGISTER: `${BASE_URL}/api/auth/register.php`,
+    LOGIN: `${BASE_URL}/nexton/api/auth/login.php`,
+    REGISTER: `${BASE_URL}/nexton/api/auth/register.php`,
+    VALIDATE: `${BASE_URL}/nexton/api/auth/validate.php`,
   },
-  UPLOADS: `${BASE_URL}/uploads/`,
+  PRODUCTS: {
+    READ: `${BASE_URL}/nexton/api/products/index.php`,
+    CREATE: `${BASE_URL}/nexton/api/products/index.php`,
+    UPDATE: `${BASE_URL}/nexton/api/products/index.php`,
+    DELETE: `${BASE_URL}/nexton/api/products/index.php`,
+  },
+  CATEGORIES: {
+    READ: `${BASE_URL}/nexton/api/categories/index.php`,
+    CREATE: `${BASE_URL}/nexton/api/categories/index.php`,
+    UPDATE: `${BASE_URL}/nexton/api/categories/index.php`,
+    DELETE: `${BASE_URL}/nexton/api/categories/index.php`,
+  },
+  ORDERS: {
+    CREATE: `${BASE_URL}/nexton/api/orders/index.php`,
+    READ: `${BASE_URL}/nexton/api/orders/index.php`,
+  },
 };

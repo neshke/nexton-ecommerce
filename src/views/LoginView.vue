@@ -1,56 +1,72 @@
 <template>
   <div class="auth-container">
     <div class="auth-card animate-slide-up">
-      <h2>Welcome Back</h2>
+      <h2>Dobrodošli nazad</h2>
       <form @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
           <input type="email" v-model="email" placeholder="Email" required />
         </div>
         <div class="form-group">
-          <input
-            type="password"
-            v-model="password"
-            placeholder="Password"
-            required
-          />
+          <input type="password" v-model="password" placeholder="Lozinka" required />
         </div>
         <div v-if="authStore.error" class="error-message">
           {{ authStore.error }}
         </div>
         <button type="submit" class="submit-btn" :disabled="authStore.loading">
-          {{ authStore.loading ? "Logging in..." : "Login" }}
+          {{ authStore.loading ? "Prijavljivanje..." : "Prijava" }}
         </button>
       </form>
       <p class="auth-switch">
-        Don't have an account?
-        <router-link to="/register">Register here</router-link>
+        Nemate nalog?
+        <router-link to="/register">Registrujte se ovde</router-link>
       </p>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
+import { useNotification } from "@/utils/notifications";
 
-const router = useRouter();
-const authStore = useAuthStore();
-const email = ref("");
-const password = ref("");
+export default {
+  name: "LoginView",
+  setup() {
+    const router = useRouter();
+    const authStore = useAuthStore();
+    const { showNotification } = useNotification();
 
-const handleLogin = async () => {
-  const success = await authStore.login({
-    email: email.value,
-    password: password.value,
-  });
+    const email = ref("");
+    const password = ref("");
 
-  console.log(success);
+    const handleLogin = async () => {
+      if (!email.value || !password.value) {
+        showNotification?.("Molimo popunite sva polja", "error");
+        return;
+      }
 
-  if (success) {
-    router.push("/");
+      const response = await authStore.login({
+        email: email.value,
+        password: password.value,
+      });
+
+      if (response.success) {
+        showNotification?.("Uspešno ste se prijavili", "success");
+        router.push("/");
+      } else {
+        showNotification?.(response.error || "Greška pri prijavi", "error");
+      }
+    };
+
+    return {
+      email,
+      password,
+      authStore,
+      handleLogin,
+    };
   }
-};
+}
 </script>
 
 <style scoped>
@@ -142,6 +158,7 @@ input:focus {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

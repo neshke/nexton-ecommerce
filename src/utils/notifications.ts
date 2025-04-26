@@ -1,24 +1,38 @@
-import { ref } from 'vue'
+import { ref } from 'vue';
+import type { Notification } from '@/models/notification';
 
-export interface Notification {
-  message: string
-  type: 'success' | 'error'
-}
+// Create a single, shared reactive state for the notification
+const notification = ref<Notification | null>(null);
+let timer: number | null = null;
 
 export const useNotification = () => {
-  const notification = ref<Notification | null>(null)
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info', timeout = 3000) => {
+    // Clear any existing timeout
+    if (timer !== null) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
 
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    if (!message || !type) return
+    // Set the notification
+    notification.value = { message, type };
     
-    notification.value = { message, type }
-    setTimeout(() => {
-      notification.value = null
-    }, 3000)
-  }
+    // Set a timeout to clear the notification
+    timer = window.setTimeout(() => {
+      notification.value = null;
+    }, timeout);
+  };
+
+  const clearNotification = () => {
+    notification.value = null;
+    if (timer !== null) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+  };
 
   return {
     notification,
-    showNotification
-  }
-}
+    showNotification,
+    clearNotification
+  };
+};

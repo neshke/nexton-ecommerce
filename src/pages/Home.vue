@@ -1,60 +1,55 @@
 <template>
   <div class="home">
     <main class="main-content">
-      <Header>
-        <template #title>
-          Welcome to our <span class="highlight">eCommerce Store</span>
-        </template>
-        <template #subtitle>
-          Discover amazing products curated just for you
-        </template>
-        <template #actions>
-          <div class="hero-buttons animate-fade-in" style="--delay: 0.9s">
-            <button class="hero-btn primary" @click="$router.push('/products')">
-              Shop Now
-            </button>
-            <button class="hero-btn secondary" @click="handleGetStarted">
-              Get Started
-            </button>
-          </div>
-        </template>
-      </Header>
+      <section class="hero">
+        <div class="hero-content">
+          <h1 class="fancy-font animate-fade-in" style="--delay: 0.9s">
+            Sledeća Generacija <span class="highlight">Kupovine</span>
+          </h1>
+          <Header>
+            <template #title>
+              Dobrodošli u našu <span class="highlight">eCommerce Prodavnicu</span>
+            </template>
+            <template #subtitle>
+              Otkrijte neverovatne proizvode kreirane samo za vas
+            </template>
+            <template #actions>
+              <div class="hero-buttons animate-fade-in" style="--delay: 0.9s">
+                <button class="hero-btn primary" @click="$router.push('/products')">
+                  Kupi Sada
+                </button>
+                <button class="hero-btn secondary" @click="handleGetStarted">
+                  Uloguj se
+                </button>
+              </div>
+            </template>
+          </Header>
+        </div>
+      </section>
       <section class="sales-window animate-slide-up">
-        <h2>Featured Products</h2>
-        <div v-if="loading" class="loading">Loading featured products...</div>
+        <h2>Istaknuti Proizvodi</h2>
+        <div v-if="loading" class="loading">Učitavanje istaknutih proizvoda...</div>
         <div v-else-if="error" class="error">{{ error }}</div>
         <div v-else-if="featuredProducts.length" class="sales-items">
-          <div
-            v-for="product in featuredProducts"
-            :key="product.id"
-            class="sales-item"
-          >
-            <img
-              :src="product.image_url || '/placeholder.jpg'"
-              :alt="product.name"
-              @error="handleImageError"
-              class="product-image"
-            />
+          <div v-for="product in featuredProducts" :key="product.id" class="sales-item">
+            <img :src="product.slika_url || '/placeholder.jpg'" :alt="product.naziv" @error="handleImageError"
+              class="product-image" />
             <div class="sales-info">
-              <h3>{{ product.name }}</h3>
-              <p class="price">${{ formatPrice(product.price) }}</p>
+              <h3>{{ product.naziv }}</h3>
+              <p class="price">{{ formatPrice(product.cena) }}</p>
               <button @click="viewProduct(product.id)" class="view-btn">
-                View Details
+                Pogledaj Detalje
               </button>
             </div>
           </div>
         </div>
-        <div v-else class="no-products">No featured products available</div>
+        <div v-else class="no-products">Nema dostupnih istaknutih proizvoda</div>
       </section>
       <section class="features">
-        <h2 class="animate-fade-in">Why Choose Us</h2>
+        <h2 class="animate-fade-in">Zašto Izabrati Nas</h2>
         <div class="feature-items">
-          <div
-            v-for="(feature, index) in features"
-            :key="feature.id"
-            class="feature-item animate-slide-up"
-            :style="{ animationDelay: `${index * 0.2}s` }"
-          >
+          <div v-for="(feature, index) in features" :key="feature.id" class="feature-item animate-slide-up"
+            :style="{ animationDelay: `${index * 0.2}s` }">
             <i :class="`fas fa-${feature.icon} feature-icon`"></i>
             <h3>{{ feature.title }}</h3>
             <p>{{ feature.description }}</p>
@@ -62,23 +57,14 @@
         </div>
       </section>
       <section class="testimonials">
-        <h2 class="animate-fade-in">What Our Customers Say</h2>
+        <h2 class="animate-fade-in">Šta Naši Kupci Kažu</h2>
         <div class="testimonial-items">
-          <div
-            v-for="(testimonial, index) in testimonials"
-            :key="index"
-            class="testimonial-item animate-scale-in"
-            :style="{ animationDelay: `${index * 0.3}s` }"
-          >
+          <div v-for="(testimonial, index) in testimonials" :key="index" class="testimonial-item animate-scale-in"
+            :style="{ animationDelay: `${index * 0.3}s` }">
             <div class="quote-icon">"</div>
             <p>{{ testimonial.text }}</p>
             <div class="testimonial-author">
-              <img
-                :src="testimonial.avatar"
-                :alt="testimonial.author"
-                class="author-image"
-                @error="handleImageError"
-              />
+              <img :src="testimonial.avatar" :alt="testimonial.author" class="author-image" @error="handleImageError" />
               <span>{{ testimonial.author }}</span>
             </div>
           </div>
@@ -86,11 +72,11 @@
       </section>
       <section class="newsletter animate-fade-in">
         <div class="newsletter-content">
-          <h2>Stay Updated</h2>
-          <p>Subscribe to our newsletter for exclusive offers and updates</p>
+          <h2>Ostanite Informisani</h2>
+          <p>Pretplatite se na naš newsletter za ekskluzivne ponude i novosti</p>
           <form class="newsletter-form">
-            <input type="email" placeholder="Enter your email" />
-            <button type="submit">Subscribe</button>
+            <input type="email" placeholder="Unesite vaš email" />
+            <button type="submit">Pretplati se</button>
           </form>
         </div>
       </section>
@@ -99,90 +85,99 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted } from "vue";
+<script lang="ts">
+import { ref, onBeforeMount } from "vue";
 import { useRouter } from "vue-router";
 import { useProductStore } from "@/stores/productStore";
-import { useAuthStore } from "@/stores/authStore"; // Add this import
-import { FEATURES, TESTIMONIALS } from "@/constants/home";
-import { PLACEHOLDER_IMAGE } from "@/utils/constants";
-import Header from '@/components/Header.vue';
+import { useAuthStore } from "@/stores/authStore";
+import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
-import type { Product } from "@/types";
+import { PLACEHOLDER_IMAGE } from "@/utils/constants";
+import { FEATURES, TESTIMONIALS } from "@/constants/home";
+import type { Product } from "@/models";
 
-const router = useRouter();
-const productsStore = useProductStore();
-const authStore = useAuthStore(); // Add this line
+export default {
+  name: "Home",
+  components: {
+    Header,
+    Footer
+  },
+  setup() {
+    const router = useRouter();
+    const productStore = useProductStore();
+    const authStore = useAuthStore();
+    const featuredProducts = ref<Product[]>([]);
+    const loading = ref(false);
+    const error = ref<string | null>(null);
+    const features = ref(FEATURES);
+    const testimonials = ref(TESTIMONIALS);
 
-const featuredProducts = ref<Product[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
-const features = ref(FEATURES);
+    // Poziva se pre nego što se komponenta montira
+    onBeforeMount(async () => {
+      loading.value = true;
+      try {
+        // Proverava da li su proizvodi već učitani
+        if (productStore.products.length === 0) {
+          await productStore.fetchProducts();
+        }
+        // Filtrira i mapira istaknute proizvode (prvih 4)
+        featuredProducts.value = productStore.products
+          .slice(0, 4) // Uzima prva 4 proizvoda kao istaknute
+          .map(product => ({
+            ...product,
+            image_url: product.slika_url || PLACEHOLDER_IMAGE
+          }));
+      } catch (err) {
+        console.error('Error loading featured products:', err);
+        error.value = "Došlo je do greške pri učitavanju proizvoda.";
+      } finally {
+        loading.value = false;
+      }
+    });
 
-onMounted(async () => {
-  try {
-    loading.value = true;
-    // Check if products exist, if not fetch them
-    if (!productsStore.getProducts || productsStore.getProducts.length === 0) {
-      await productsStore.fetchProducts();
-    }
-    // Get featured products from the store
-    featuredProducts.value = productsStore.getProducts
-      .slice(0, 4)
-      .map((product) => ({
-        ...product,
-        image_url: product.image_url || PLACEHOLDER_IMAGE,
-      }));
-  } catch (err) {
-    error.value = "Failed to load featured products";
-    console.error("Failed to fetch products:", err);
-  } finally {
-    loading.value = false;
+    // Funkcija koja se poziva kada korisnik klikne na "Počnite"
+    const handleGetStarted = () => {
+      if (authStore.isAuthenticated) {
+        router.push({ name: 'Products' });
+      } else {
+        router.push({ name: 'Login' });
+      }
+    };
+
+    // Funkcija koja se poziva kada slika proizvoda ne može da se učita
+    const handleImageError = (event: Event) => {
+      const target = event.target as HTMLImageElement;
+      target.src = PLACEHOLDER_IMAGE;
+    };
+
+    // Formatira cenu proizvoda
+    const formatPrice = (price: number | undefined | null): string => {
+      if (price === undefined || price === null) return "0,00 €";
+      return new Intl.NumberFormat("sr-RS", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 0,
+      }).format(price);
+    };
+
+    // Navigira na stranicu sa detaljima proizvoda.
+    const viewProduct = (productId: number) => {
+      router.push({ name: "ProductDetail", params: { id: productId } });
+    };
+
+    return {
+      featuredProducts,
+      loading,
+      error,
+      features,
+      testimonials,
+      handleGetStarted,
+      handleImageError,
+      formatPrice,
+      viewProduct
+    };
   }
-});
-
-const formatPrice = (price: number | string): string => {
-  if (typeof price === "string") {
-    price = parseFloat(price);
-  }
-  if (typeof price !== "number" || isNaN(price)) {
-    return "0.00";
-  }
-  return price.toFixed(2);
-};
-
-const viewProduct = (id: number) => {
-  router.push(`/product/${id}`);
-};
-
-const isPlaceholder = (url: string | null): boolean => {
-  return !url || url === PLACEHOLDER_IMAGE;
-};
-
-const handleImageError = (e: Event) => {
-  const img = e.target as HTMLImageElement;
-  if (!isPlaceholder(img.src)) {
-    img.src = PLACEHOLDER_IMAGE;
-  }
-};
-
-const testimonials = ref(
-  TESTIMONIALS.map(({ id, text, author }) => ({
-    id,
-    text,
-    author,
-    avatar: PLACEHOLDER_IMAGE,
-  }))
-);
-
-// Add this function
-const handleGetStarted = () => {
-  if (authStore.isAuthenticated()) {
-    router.push("/products");
-  } else {
-    router.push("/login");
-  }
-};
+}
 </script>
 
 <style scoped>
@@ -450,7 +445,8 @@ const handleGetStarted = () => {
 .sales-item img {
   width: 100%;
   height: 200px;
-  object-fit: contain; /* Changed from cover to contain */
+  object-fit: contain;
+  /* Changed from cover to contain */
   transition: transform 0.5s ease;
 }
 
@@ -523,7 +519,8 @@ const handleGetStarted = () => {
 .product-image {
   width: 100%;
   height: 200px;
-  object-fit: contain; /* Changed from cover to contain */
+  object-fit: contain;
+  /* Changed from cover to contain */
   background: #f3f4f6;
 }
 
@@ -537,7 +534,6 @@ const handleGetStarted = () => {
 /* Base Animation Classes */
 .animate-fade-in {
   animation: fadeIn 1s ease-out forwards;
-  opacity: 0;
 }
 
 .animate-slide-up {
@@ -555,6 +551,7 @@ const handleGetStarted = () => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -565,6 +562,7 @@ const handleGetStarted = () => {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -576,6 +574,7 @@ const handleGetStarted = () => {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -587,6 +586,7 @@ const handleGetStarted = () => {
     opacity: 0;
     transform: translateX(-50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -598,6 +598,7 @@ const handleGetStarted = () => {
     opacity: 0;
     transform: translateX(50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -609,14 +610,17 @@ const handleGetStarted = () => {
     opacity: 0;
     transform: scale(0.3);
   }
+
   50% {
     opacity: 0.9;
     transform: scale(1.1);
   }
+
   80% {
     opacity: 1;
     transform: scale(0.89);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -625,6 +629,7 @@ const handleGetStarted = () => {
 
 /* Ensure animations play when elements enter viewport */
 @media (prefers-reduced-motion: no-preference) {
+
   .animate-fade-in,
   .animate-slide-up,
   .animate-scale-in {
@@ -714,6 +719,7 @@ const handleGetStarted = () => {
 
 /* Optimize animations for better performance */
 @media (prefers-reduced-motion: reduce) {
+
   .animate-fade-in,
   .animate-slide-up,
   .animate-scale-in,

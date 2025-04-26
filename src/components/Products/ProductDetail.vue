@@ -2,159 +2,237 @@
   <div class="product-detail">
     <button class="close-btn" @click="goBack">✕</button>
     <div v-if="loading" class="loading animate-fade-in">
-      Loading product details...
+      Učitavanje detalja proizvoda...
     </div>
     <div v-else-if="error" class="error animate-fade-in">{{ error }}</div>
     <div v-else-if="product" class="product-container animate-slide-up">
       <div class="product-image animate-fade-in">
-        <div
-          class="image-container"
-          @mousemove="handleZoom"
-          @mouseleave="isZoomed = false"
-          :class="{ 'is-zoomed': isZoomed }"
-        >
-          <img
-            :src="product.image_url || PLACEHOLDER_IMAGE"
-            :alt="product.name"
-            @error="handleImageError"
-            :class="{
-              'is-placeholder': isPlaceholder(product.image_url),
-              'zoom-image': !isPlaceholder(product.image_url),
-            }"
-            ref="productImage"
-          />
+        <div class="image-container" @mousemove="handleZoom" @mouseleave="isZoomed = false"
+          :class="{ 'is-zoomed': isZoomed }">
+          <img :src="product.slika_url || PLACEHOLDER_IMAGE" :alt="product.naziv" @error="handleImageError" :class="{
+            'is-placeholder': isPlaceholder(product.slika_url),
+            'zoom-image': !isPlaceholder(product.slika_url),
+          }" ref="productImage" />
         </div>
       </div>
       <div class="product-info animate-slide-up">
-        <h2>{{ product.name }}</h2>
-        <p class="description">{{ product.description }}</p>
-        <p class="price">{{ formatPrice(product.price) }}</p>
+        <h2>{{ product.naziv }}</h2>
+        <p class="description">{{ product.opis }}</p>
+        <p class="price">{{ formatPrice(product.cena) }}</p>
         <div class="quantity-control">
           <button @click="decreaseQuantity" :disabled="quantity <= 1">-</button>
           <span>{{ quantity }}</span>
           <button @click="increaseQuantity">+</button>
         </div>
-        <button
-          @click="handleAddToCart"
-          class="add-to-cart-btn"
-          :disabled="loading"
-        >
-          Add to Cart
+        <button @click="handleAddToCart" class="add-to-cart-btn" :disabled="loading">
+          Dodaj u korpu
         </button>
+
+        <!-- Admin Buttons Section -->
+        <div v-if="isAdmin" class="admin-buttons">
+          <button @click="handleDeleteProduct" class="delete-btn">
+            Obriši proizvod
+          </button>
+        </div>
       </div>
     </div>
   </div>
-  <div
-    v-if="notification?.message"
-    class="notification"
-    :class="notification.type"
-  >
-    {{ notification.message }}
-  </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+<script lang="ts">
+import { ref, onMounted, computed, defineComponent, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useProductStore } from "@/stores/productStore";
+import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useNotification } from "@/utils/notifications";
 import { PLACEHOLDER_IMAGE } from "@/utils/constants";
+import type { Product } from "@/models";
 
-const route = useRoute();
-const router = useRouter();
-const store = useProductStore();
-const quantity = ref(1);
-const loading = ref(false);
-const error = ref<string | null>(null);
-const { notification, showNotification } = useNotification();
 
-// Use computed property to get product from store
-const product = computed(() => {
-  const productId = Number(route.params.id);
-  return store.getProducts.find((p) => p.id === productId) || null;
-});
+export default defineComponent({
 
-onMounted(async () => {
-  const productId = Number(route.params.id);
-  if (!productId) {
-    error.value = "Invalid product ID";
-    return;
-  }
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const store = useProductStore();
+    const cartStore = useCartStore();
+    const authStore = useAuthStore();
+    const { showNotification } = useNotification();
 
-  try {
-    loading.value = true;
-    await store.fetchProducts();
-    if (!product.value) {
-      error.value = "Product not found";
-    }
-  } catch (err) {
-    error.value = "Failed to load product details";
-    console.error(err);
-  } finally {
-    loading.value = false;
-  }
-});
+    const product = ref<Product | null>(null); // Proizvod koji se prikazuje
+    const quantity = ref(1); // Količina za dodavanje u korpu
+    const loading = ref(false); // Status učitavanja
+    const error = ref<string | null>(null); // Poruka o grešci
+    const isZoomed = ref(false); // Status zuma slike
+    const productImage = ref<HTMLImageElement | null>(null); // Referenca na element slike
 
-const increaseQuantity = () => {
-  quantity.value++;
-};
+    // Dobijanje ID-ja proizvoda iz rute
+    const productId = computed(() => parseInt(route.params.id as string, 10));
 
-const decreaseQuantity = () => {
-  if (quantity.value > 1) {
-    quantity.value--;
-  }
-};
+    // Provera da li je korisnik admin
+    const isAdmin = computed(() => authStore.user?.role === 'admin');
 
-const handleAddToCart = () => {
-  if (!product.value) return;
+    // Dohvata detalje proizvoda kada se komponenta montira ili ID promeni
+    const fetchProductDetails = async (id: number) => {
+      loading.value = true;
+      error.value = null;
+      try {
+        // Poziva akciju za dohvatanje proizvoda po ID-ju
+        const fetchedProduct = await store.fetchProductById(id);
+        if (fetchedProduct) {
+          product.value = fetchedProduct;
+        } else {
+          throw new Error("Proizvod nije pronađen");
+        }
+      } catch (err: any) {
+        error.value = err.message || "Neuspešno učitavanje detalja proizvoda";
+        console.error("Greška pri dohvatanju detalja proizvoda:", err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-  try {
-    store.addToCart({
-      product: product.value,
-      quantity: quantity.value,
+    // Poziva se kada se komponenta montira
+    onMounted(() => {
+      if (productId.value) {
+        fetchProductDetails(productId.value);
+      }
     });
-    showNotification("Product added to cart", "success");
-  } catch (error) {
-    showNotification("Failed to add product to cart", "error");
+
+    // Prati promene ID-ja proizvoda u ruti i ponovo dohvata podatke
+    watch(productId, (newId) => {
+      if (newId) {
+        fetchProductDetails(newId);
+      }
+    });
+
+    // Povećava količinu proizvoda.
+    const increaseQuantity = () => {
+      quantity.value++;
+    };
+
+    // Smanjuje količinu proizvoda.
+    const decreaseQuantity = () => {
+      if (quantity.value > 1) {
+        quantity.value--;
+      }
+    };
+
+    // Dodaje proizvod u korpu.
+    const handleAddToCart = () => {
+      if (!product.value) return;
+
+      try {
+        cartStore.addToCart({
+          product: product.value,
+          quantity: quantity.value,
+        });
+        showNotification("Proizvod dodat u korpu", "success");
+      } catch (error) {
+        showNotification("Greška prilikom dodavanja proizvoda u korpu", "error");
+      }
+    };
+
+    // Rukuje greškom pri učitavanju slike
+    const handleImageError = (e: Event) => {
+      const img = e.target as HTMLImageElement;
+      if (!isPlaceholder(img.src)) {
+        img.src = PLACEHOLDER_IMAGE;
+      }
+    };
+
+    // Proverava da li je URL slike placeholder
+    const isPlaceholder = (url: string | undefined): boolean => {
+      return !url || url === PLACEHOLDER_IMAGE;
+    };
+
+    // Formatira cenu u EUR format
+    const formatPrice = (price: number | string | undefined) => {
+      if (price === undefined || price === null) {
+        return "Cena nije dostupna";
+      }
+
+      // Konvertuje u broj ako je string
+      const numPrice = typeof price === "string" ? parseFloat(price) : price;
+
+      // Proverava da li je validan broj
+      if (isNaN(numPrice)) {
+        return "Cena nije dostupna";
+      }
+
+      return `${numPrice.toFixed(2)} EUR`;
+    };
+
+    // Rukuje pomeranjem miša preko slike za efekat zuma
+    const handleZoom = (event: MouseEvent) => {
+      // Ako slika nije učitana ili je placeholder, prekida
+      if (!productImage.value || isPlaceholder(product.value?.slika_url || undefined))
+        return;
+
+      const image = productImage.value;
+      const { left, top, width, height } = image.getBoundingClientRect();
+
+      // Izračunava poziciju kursora relativno u odnosu na sliku (0 do 1)
+      const x = (event.clientX - left) / width;
+      const y = (event.clientY - top) / height;
+
+      // Postavlja tačku transformacije za zum
+      image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
+      isZoomed.value = true; // Aktivira zum
+    };
+
+    // Vraća korisnika na prethodnu stranicu
+    const goBack = () => {
+      router.back();
+    };
+
+    // Rukuje brisanjem proizvoda (samo za admina)
+    const handleDeleteProduct = async () => {
+      if (!product.value) return;
+
+      // Traži potvrdu od korisnika
+      if (confirm('Da li ste sigurni da želite da obrišete ovaj proizvod?')) {
+        try {
+          loading.value = true;
+
+          // Koristi metod iz productStore umesto direktnog API poziva
+          await store.deleteProduct(product.value.id);
+
+          showNotification("Proizvod je uspešno obrisan", "success");
+          router.push('/products'); // Preusmerava na listu proizvoda
+        } catch (error: any) {
+          // Rukovanje greškama
+          console.error("Delete error:", error);
+          showNotification(error.message || "Greška prilikom brisanja proizvoda", "error");
+        } finally {
+          loading.value = false;
+        }
+      }
+    };
+
+
+    return {
+      product, // Detalji proizvoda
+      quantity, // Količina
+      loading, // Status učitavanja
+      error, // Poruka o grešci
+      isAdmin, // Da li je korisnik admin
+      isZoomed, // Status zuma slike
+      productImage, // Referenca na element slike
+      PLACEHOLDER_IMAGE, // Konstanta za placeholder sliku
+      increaseQuantity, // Funkcija za povećanje količine
+      decreaseQuantity, // Funkcija za smanjenje količine
+      handleAddToCart, // Funkcija za dodavanje u korpu
+      handleImageError, // Funkcija za rukovanje greškom slike
+      isPlaceholder, // Funkcija za proveru da li je slika placeholder
+      formatPrice, // Funkcija za formatiranje cene
+      handleZoom, // Funkcija za rukovanje zumom slike
+      goBack, // Funkcija za povratak nazad
+      handleDeleteProduct, // Funkcija za brisanje proizvoda (admin)
+    };
   }
-};
-
-const handleImageError = (e: Event) => {
-  const img = e.target as HTMLImageElement;
-  if (!isPlaceholder(img.src)) {
-    img.src = PLACEHOLDER_IMAGE;
-  }
-};
-
-const isPlaceholder = (url: string | null): boolean => {
-  return !url || url === PLACEHOLDER_IMAGE;
-};
-
-// Add this new method to handle price formatting
-const formatPrice = (price: number | undefined) => {
-  return price !== undefined ? `$${price.toFixed(2)}` : "Price not available";
-};
-
-const isZoomed = ref(false);
-const productImage = ref<HTMLImageElement | null>(null);
-
-const handleZoom = (event: MouseEvent) => {
-  if (!productImage.value || isPlaceholder(product.value?.image_url || null))
-    return;
-
-  const image = productImage.value;
-  const { left, top, width, height } = image.getBoundingClientRect();
-
-  const x = (event.clientX - left) / width;
-  const y = (event.clientY - top) / height;
-
-  image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
-  isZoomed.value = true;
-};
-
-const goBack = () => {
-  router.back();
-};
+});
 </script>
 
 <style scoped>
@@ -174,8 +252,10 @@ const goBack = () => {
   background: #f8f9fa;
   border-radius: 8px;
   overflow: hidden;
-  max-width: 600px; /* Match container max-width */
-  margin: 0 auto; /* Center image container */
+  max-width: 600px;
+  /* Match container max-width */
+  margin: 0 auto;
+  /* Center image container */
 }
 
 .product-image img {
@@ -183,8 +263,10 @@ const goBack = () => {
   height: auto;
   object-fit: contain;
   aspect-ratio: 1;
-  max-height: 500px; /* Add maximum height */
-  max-width: 600px; /* Add maximum width */
+  max-height: 500px;
+  /* Add maximum height */
+  max-width: 600px;
+  /* Add maximum width */
 }
 
 .product-info {
@@ -219,15 +301,18 @@ const goBack = () => {
 }
 
 .product-detail {
-  position: relative; /* Add this */
+  position: relative;
+  /* Add this */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 80px);
   padding: 2rem 0;
-  width: 100%; /* Add this */
+  width: 100%;
+  /* Add this */
 }
+
 .product-detail img {
   max-width: 100%;
   height: auto;
@@ -261,24 +346,6 @@ const goBack = () => {
   padding: 1rem;
 }
 
-.notification {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 1rem;
-  border-radius: 8px;
-  color: white;
-  z-index: 1000;
-}
-
-.notification.success {
-  background-color: #10b981;
-}
-
-.notification.error {
-  background-color: #ef4444;
-}
-
 .is-placeholder {
   background-color: #f3f4f6;
   object-fit: contain !important;
@@ -300,6 +367,7 @@ const goBack = () => {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -310,6 +378,7 @@ const goBack = () => {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -318,6 +387,7 @@ const goBack = () => {
 
 /* Optimize animations for better performance */
 @media (prefers-reduced-motion: reduce) {
+
   .animate-fade-in,
   .animate-slide-up {
     animation: none;
@@ -364,18 +434,13 @@ const goBack = () => {
     padding: 0.5rem;
   }
 
-  .notification {
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
-    text-align: center;
-  }
 }
 
 .image-container {
   position: relative;
   width: 100%;
-  max-width: 600px; /* Add maximum width */
+  max-width: 600px;
+  /* Add maximum width */
   height: 500px;
   overflow: hidden;
   border-radius: 8px;
@@ -383,7 +448,8 @@ const goBack = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto; /* Center container */
+  margin: 0 auto;
+  /* Center container */
 }
 
 .product-image img {
@@ -433,9 +499,11 @@ const goBack = () => {
 }
 
 .close-btn {
-  position: absolute; /* Change from fixed to absolute */
+  position: absolute;
+  /* Change from fixed to absolute */
   top: 2rem;
-  left: 2rem; /* Changed from right to left */
+  left: 2rem;
+  /* Changed from right to left */
   width: 40px;
   height: 40px;
   background: #6366f1;
@@ -445,14 +513,18 @@ const goBack = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem; /* Increased font size */
-  font-weight: 300; /* Made the X thinner */
+  font-size: 1.5rem;
+  /* Increased font size */
+  font-weight: 300;
+  /* Made the X thinner */
   color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   z-index: 100;
-  line-height: 0; /* Center the X vertically */
-  padding-bottom: 3px; /* Fine-tune X position */
+  line-height: 0;
+  /* Center the X vertically */
+  padding-bottom: 3px;
+  /* Fine-tune X position */
 }
 
 .close-btn:hover {
@@ -464,7 +536,8 @@ const goBack = () => {
 @media (max-width: 768px) {
   .close-btn {
     top: 1rem;
-    left: 1rem; /* Changed from right to left */
+    left: 1rem;
+    /* Changed from right to left */
     width: 35px;
     height: 35px;
     font-size: 1.2rem;
@@ -474,5 +547,27 @@ const goBack = () => {
 /* Remove the old back-btn styles */
 .back-btn {
   display: none;
+}
+
+.delete-btn {
+  width: 100%;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: #ef4444;
+  /* Red color */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+  /* Darker red on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
 }
 </style>

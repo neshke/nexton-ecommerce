@@ -1,12 +1,27 @@
-import axios from 'axios';
+import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: 'http://127.0.0.1/nexton-ecommerce/api', // Update this to match your API URL
+  // Use baseURL without trailing slash
+  baseURL: "http://192.168.1.2:8080",
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    "Content-Type": "application/json",
   },
-  withCredentials: false // Change to false since we're not using credentials
+  withCredentials: false,
 });
+
+// Add request interceptor to fix URL issues
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Log the final URL for debugging
+    console.log("Request method:", config.method);
+    console.log("Final request URL:", `${config.baseURL}${config.url}`);
+    
+    return config;
+  },
+  (error) => {
+    console.error("Request error:", error);
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;

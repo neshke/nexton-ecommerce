@@ -4,6 +4,8 @@ import Home from "../pages/Home.vue";
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 import Profile from '../components/Profile.vue';
+import Cart from '@/pages/Cart.vue'; // Add this import
+import { useAuthStore } from '@/stores/authStore';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -24,7 +26,11 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/cart",
     name: "Cart",
-    component: () => import("../components/Cart.vue"),
+    component: Cart,
+    meta: {
+      requiresAuth: false,
+      title: 'Shopping Cart'
+    }
   },
   {
     path: "/checkout",
@@ -65,6 +71,18 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+});
+
+// Add navigation guards
+router.beforeEach((to, _from, next) => {
+  const authStore = useAuthStore();
+  
+  // If trying to access profile page and not logged in, redirect to login
+  if (to.path === '/profile' && !authStore.isAuthenticated) {
+    next('/login');
+  } else {
+    next();
+  }
 });
 
 export default router;

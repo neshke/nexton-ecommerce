@@ -1,36 +1,28 @@
 <template>
   <div class="about-page">
-    <Header
-      title="About"
-      highlighted="Us"
-      subtitle="Discover our story and mission"
-    />
+    <Header title="O" highlighted="nama" subtitle="Otkrijte našu priču i misiju" />
 
     <main class="main-content">
       <section class="about-section">
         <div class="container">
           <div class="about-grid">
             <div class="about-text animate-slide-right">
-              <h2>Our Story</h2>
+              <h2>Naša priča</h2>
               <p>
-                Founded in 2023, we've been committed to bringing you the best
-                products with outstanding service.
+                Osnovani 2025. godine, posvećeni smo tome da vam donosimo najbolje
+                proizvode uz izuzetnu uslugu.
               </p>
-              <h2>Our Mission</h2>
+              <h2>Naša misija</h2>
               <p>
-                To provide high-quality products while ensuring an exceptional
-                shopping experience for our customers.
+                Da pružimo proizvode visokog kvaliteta uz osiguravanje izuzetnog
+                iskustva kupovine za naše kupce.
               </p>
             </div>
             <div class="about-stats">
-              <div 
-                v-for="(stat, index) in ['1000+', '500+', '24/7']" 
-                :key="stat"
-                class="stat-item animate-scale-in"
-                :style="{ animationDelay: `${index * 0.2}s` }"
-              >
+              <div v-for="(stat, index) in ['1000+', '24/7']" :key="stat" class="stat-item animate-scale-in"
+                :style="{ animationDelay: `${index * 0.2}s` }">
                 <h3>{{ stat }}</h3>
-                <p>{{ stat === '1000+' ? 'Happy Customers' : stat === '500+' ? 'Products' : 'Support' }}</p>
+                <p>{{ stat === '1000+' ? 'Zadovoljnih kupaca' : 'Podrška' }}</p>
               </div>
             </div>
           </div>
@@ -41,16 +33,26 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import Footer from '@/components/Footer.vue';
 import Header from '@/components/Header.vue';
+
+export default {
+  name: "About",
+  components: {
+    Footer,
+    Header
+  }
+}
 </script>
 
 <style scoped>
 .about-page {
   min-height: 100vh;
-  display: flex; /* Add this */
-  flex-direction: column; /* Add this */
+  display: flex;
+  /* Add this */
+  flex-direction: column;
+  /* Add this */
 }
 
 .hero {
@@ -73,7 +75,8 @@ import Header from '@/components/Header.vue';
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 2rem;
-  flex: 1; /* Add this */
+  flex: 1;
+  /* Add this */
 }
 
 .about-grid {
@@ -134,9 +137,10 @@ import Header from '@/components/Header.vue';
   .about-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .main-content {
-    padding: 2rem 1rem; /* Adjust padding for mobile */
+    padding: 2rem 1rem;
+    /* Adjust padding for mobile */
   }
 }
 
@@ -164,8 +168,13 @@ import Header from '@/components/Header.vue';
 
 /* Animation Keyframes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideDown {
@@ -173,6 +182,7 @@ import Header from '@/components/Header.vue';
     opacity: 0;
     transform: translateY(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -184,6 +194,7 @@ import Header from '@/components/Header.vue';
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -195,6 +206,7 @@ import Header from '@/components/Header.vue';
     opacity: 0;
     transform: translateX(-50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -206,6 +218,7 @@ import Header from '@/components/Header.vue';
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

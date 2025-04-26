@@ -1,6 +1,6 @@
 <template>
-  <Transition name="modal-backdrop">
-    <div v-if="show" class="modal-overlay" @click="closeModal">
+  <Transition name="modal">
+    <div v-if="show" class="modal-overlay" @click.self.stop>
       <Transition name="modal-content">
         <div v-if="show" class="modal-content" @click.stop>
           <button class="close-button" @click="closeModal">&times;</button>
@@ -9,19 +9,12 @@
             <div v-else-if="error" class="error">{{ error }}</div>
             <div v-else-if="product" class="product-container">
               <div class="product-image">
-                <img
-                  :src="product.image_url || PLACEHOLDER_IMAGE"
-                  :alt="product.name"
-                  @error="handleImageError"
-                  :class="{
-                    'is-placeholder': isPlaceholder(product.image_url),
-                  }"
-                />
+                <img :src="product.slika_url || '/images/placeholder-product.jpg'" :alt="product.naziv" />
               </div>
               <div class="product-info">
-                <h2>{{ product.name }}</h2>
-                <p class="description">{{ product.description }}</p>
-                <p class="price">{{ formatPrice(product.price) }}</p>
+                <h2>{{ product.naziv }}</h2>
+                <p class="description">{{ product.opis }}</p>
+                <p class="price">{{ formatPrice(product.cena) }}</p>
                 <div class="quantity-control">
                   <button @click="decreaseQuantity" :disabled="quantity <= 1">
                     -
@@ -30,15 +23,11 @@
                   <button @click="increaseQuantity">+</button>
                 </div>
                 <div class="button-group">
-                  <button
-                    @click="handleAddToCart"
-                    class="add-to-cart-btn"
-                    :disabled="loading"
-                  >
-                    Add to Cart
+                  <button @click="handleAddToCart" class="add-to-cart-btn" :disabled="loading">
+                    Dodaj u korpu
                   </button>
                   <button @click="navigateToDetails" class="view-details-btn">
-                    View Full Details
+                    Pogledaj detalje
                   </button>
                 </div>
               </div>
@@ -53,42 +42,61 @@
 <script setup lang="ts">
 import { ref, defineProps, defineEmits } from "vue";
 import { useRouter } from "vue-router";
-import { PLACEHOLDER_IMAGE } from "@/utils/constants";
-import type { Product } from "@/types";
+import type { Product } from "@/models";
+import { useNotification } from '@/utils/notifications'; // Add this import
 
 const props = defineProps<{
-  show: boolean;
-  product: Product | null;
+  show: boolean; // Da li je modal vidljiv
+  product: Product | null; // Proizvod koji se prikazuje u modalu
 }>();
 
-const emit = defineEmits(["close", "add-to-cart"]);
+const emit = defineEmits(["close", "add-to-cart"]); // Događaji koje modal emituje
 
 const quantity = ref(1);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-const router = useRouter();
+const router = useRouter(); // Instanca router-a
 
+const { showNotification } = useNotification(); // Add this line
+
+// Zatvara modalni prozor
 const closeModal = () => {
   emit("close");
 };
 
+// Povećava količinu proizvoda.
 const increaseQuantity = () => {
   quantity.value++;
 };
 
+// Smanjuje količinu proizvoda, ali ne ispod 1
 const decreaseQuantity = () => {
   if (quantity.value > 1) {
     quantity.value--;
   }
 };
 
+// Dodaje proizvod u korpu.
 const handleAddToCart = () => {
   if (!props.product) return;
-  emit("add-to-cart", { product: props.product, quantity: quantity.value });
-  closeModal();
+
+  try {
+    // Emit add-to-cart event to parent
+    emit('add-to-cart', { product: props.product, quantity: quantity.value });
+
+    // Show notification from modal component
+    showNotification(`${props.product.naziv || 'Proizvod'} dodat u korpu.`, 'success');
+
+    // Close the modal after adding
+    emit('close');
+  } catch (error) {
+    console.error('Error adding product to cart:', error);
+    showNotification('Greška pri dodavanju u korpu.', 'error');
+  }
 };
 
+// Navigira na stranicu sa detaljima proizvoda.
 const navigateToDetails = () => {
   if (props.product?.id) {
     router.push(`/product/${props.product.id}`);
@@ -96,22 +104,13 @@ const navigateToDetails = () => {
   }
 };
 
-const handleImageError = (e: Event) => {
-  const img = e.target as HTMLImageElement;
-  if (!isPlaceholder(img.src)) {
-    img.src = PLACEHOLDER_IMAGE;
-  }
-};
-
-const isPlaceholder = (url: string | null): boolean => {
-  return !url || url === PLACEHOLDER_IMAGE;
-};
-
+// Formatira cenu u EUR format
 const formatPrice = (price: number | undefined): string => {
-  if (!price) return "$0.00";
-  return new Intl.NumberFormat("en-US", {
+  if (!price) return "Nije dostupno";
+  return new Intl.NumberFormat("sr-RS", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
+    minimumFractionDigits: 0,
   }).format(price);
 };
 </script>
@@ -123,11 +122,9 @@ const formatPrice = (price: number | undefined): string => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(
-    circle at center,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.8) 100%
-  );
+  background: radial-gradient(circle at center,
+      rgba(0, 0, 0, 0.7) 0%,
+      rgba(0, 0, 0, 0.8) 100%);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -335,7 +332,7 @@ const formatPrice = (price: number | undefined): string => {
 }
 
 /* Add transition to inner elements */
-.product-info > * {
+.product-info>* {
   animation: slideIn 0.5s ease forwards;
   opacity: 0;
 }
@@ -343,15 +340,19 @@ const formatPrice = (price: number | undefined): string => {
 .product-info h2 {
   animation-delay: 0.1s;
 }
+
 .product-info .description {
   animation-delay: 0.2s;
 }
+
 .product-info .price {
   animation-delay: 0.3s;
 }
+
 .product-info .quantity-control {
   animation-delay: 0.4s;
 }
+
 .product-info .button-group {
   animation-delay: 0.5s;
 }
@@ -361,6 +362,7 @@ const formatPrice = (price: number | undefined): string => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

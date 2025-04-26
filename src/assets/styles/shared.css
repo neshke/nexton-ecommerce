@@ -1,3 +1,15 @@
+@import "tailwindcss";
+
+.fancy-font {
+  font-family: 'LeckerliOne', cursive;
+}
+
+/* Add a utility class for italic text */
+.italic-text {
+  font-family: 'Rubik', sans-serif;
+  font-style: italic;
+}
+
 .auth-button {
   padding: 0.7rem 1.5rem !important;
   border-radius: 30px !important;
