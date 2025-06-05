@@ -143,15 +143,57 @@ switch ($method) {
     if ($id) {
       $data = json_decode(file_get_contents("php://input"));
 
+      // First, check if the product exists
       $product->id = $id;
-      $product->naziv = $data->naziv ?? null;
-      $product->opis = $data->opis ?? null;
-      $product->cena = $data->cena ?? null;
-      $product->kategorija_id = $data->kategorija_id ?? null;
-      $product->kolicina_na_stanju = $data->kolicina_na_stanju ?? null;
-      $product->slika_url = $data->slika_url ?? null;
-      $product->istaknuto = $data->istaknuto ?? null;
-      $product->aktivan = $data->aktivan ?? null;
+      $existingProduct = $product->getOne(); // Assuming getOne() fetches current product data
+
+      if (!$existingProduct) {
+        http_response_code(404);
+        echo json_encode([
+          'status' => 404,
+          'message' => 'Product not found for update.'
+        ]);
+        break;
+      }
+
+      // Validate category_id if provided and changed
+      if (isset($data->kategorija_id) && $data->kategorija_id !== $existingProduct['kategorija_id']) {
+        $category->id = intval($data->kategorija_id);
+        if (!$category->getOne()) {
+          http_response_code(400);
+          echo json_encode([
+            'status' => 400,
+            'message' => 'Category ID does not exist. Please select a valid category.'
+          ]);
+          break;
+        }
+        $product->kategorija_id = intval($data->kategorija_id);
+      } else {
+        // Keep existing category_id if not provided in $data or not changed
+        $product->kategorija_id = $existingProduct['kategorija_id'];
+      }
+      
+      $product->id = $id; // Ensure ID is set on the product object for update
+
+      // Handle name and slug update
+      if (isset($data->naziv) && $data->naziv !== $existingProduct['naziv']) {
+        $product->naziv = $data->naziv;
+        $product->slug = $product->createSlug($data->naziv); // Regenerate slug
+      } else {
+        $product->naziv = $existingProduct['naziv']; // Keep existing if not provided
+        $product->slug = $existingProduct['slug'];   // Keep existing slug
+      }
+
+      $product->opis = $data->opis ?? $existingProduct['opis'];
+      $product->cena = $data->cena ?? $existingProduct['cena'];
+      // kategorija_id is handled above
+      $product->kolicina_na_stanju = $data->kolicina_na_stanju ?? $existingProduct['kolicina_na_stanju'];
+      $product->slika_url = $data->slika_url ?? $existingProduct['slika_url']; // Frontend handles image deletion/upload separately
+      $product->istaknuto = $data->istaknuto ?? $existingProduct['istaknuto'];
+      $product->aktivan = $data->aktivan ?? $existingProduct['aktivan'];
+      // akcijska_cena is not explicitly handled here, assuming it might be part of $data or managed elsewhere
+      $product->akcijska_cena = $data->akcijska_cena ?? $existingProduct['akcijska_cena'];
+
 
       if ($product->update()) {
         http_response_code(200);
@@ -200,18 +242,37 @@ switch ($method) {
       
       if ($id) {
         $product->id = $id;
-
-        if ($product->delete()) {
-          http_response_code(200);
-          echo json_encode([
-            'status' => 200,
-            'message' => 'Product deleted successfully'
-          ]);
+        
+        // Get the current product to get the image URL
+        $currentProduct = $product->getOne();
+        
+        if ($currentProduct) {
+          // Set the image URL to delete
+          $product->slika_url = $currentProduct['slika_url'] ?? '';
+          
+          // Delete the image file first
+          $imageDeleted = $product->deleteProductImage();
+          
+          // Now delete the product from the database
+          if ($product->delete()) {
+            http_response_code(200);
+            echo json_encode([
+              'status' => 200,
+              'message' => 'Product deleted successfully' . 
+                ($imageDeleted ? '' : ' (Note: Unable to delete associated image file)')
+            ]);
+          } else {
+            http_response_code(500);
+            echo json_encode([
+              'status' => 500,
+              'message' => 'Unable to delete product'
+            ]);
+          }
         } else {
-          http_response_code(500);
+          http_response_code(404);
           echo json_encode([
-            'status' => 500,
-            'message' => 'Unable to delete product'
+            'status' => 404,
+            'message' => 'Product not found'
           ]);
         }
       } else {

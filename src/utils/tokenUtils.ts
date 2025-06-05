@@ -1,3 +1,8 @@
+/**
+ * Dekodira JWT token.
+ * @param token JWT token za dekodiranje.
+ * @returns Dekodirani token ili null ako dođe do greške.
+ */
 interface DecodedToken {
   exp: number;
   iat: number;
@@ -18,6 +23,11 @@ export const decodeToken = (token: string): DecodedToken | null => {
   }
 };
 
+/**
+ * Proverava da li je JWT token istekao.
+ * @param token JWT token za proveru.
+ * @returns True ako je token istekao, inače false.
+ */
 export const isTokenExpired = (token: string): boolean => {
   const decoded = decodeToken(token);
   if (!decoded) return true;

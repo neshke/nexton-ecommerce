@@ -4,7 +4,6 @@
   font-family: 'LeckerliOne', cursive;
 }
 
-/* Add a utility class for italic text */
 .italic-text {
   font-family: 'Rubik', sans-serif;
   font-style: italic;
@@ -14,12 +13,12 @@
   padding: 0.7rem 1.5rem !important;
   border-radius: 30px !important;
   transition: all 0.3s ease !important;
-  font-weight: 700 !important; /* increased font weight */
+  font-weight: 700 !important;
   white-space: nowrap;
   min-width: 100px;
   text-align: center;
   background-color: #6366f1 !important;
-  color: #ffffff !important; /* explicit white color for better contrast */
+  color: #ffffff !important;
   border: 2px solid transparent !important;
   cursor: pointer;
   text-decoration: none;
@@ -37,9 +36,9 @@
 .hero {
   padding: clamp(3rem, 8vw, 6rem) 1rem;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: #ffffff; /* explicit white color for better contrast */
+  color: #ffffff;
   text-align: center;
-  font-weight: 600; /* increased font weight */
+  font-weight: 600;
 }
 
 .highlight {
@@ -91,9 +90,8 @@
   }
 }
 
-/* Add avatar styling */
 .avatar {
-  background-color: #ffffff !important; /* white background for avatar */
+  background-color: #ffffff !important;
   border: 2px solid #e5e7eb;
   border-radius: 50%;
   color: #6366f1 !important;

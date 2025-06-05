@@ -136,4 +136,49 @@ function requireRole($requiredRole) {
 function requireAdmin() {
     return requireRole('admin');
 }
+
+/**
+ * Get user data from token without requiring authentication
+ * Returns decoded token payload or false if invalid
+ */
+function get_user_from_token() {
+    $headers = getallheaders();
+    $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+    
+    if (empty($authHeader) || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        return false;
+    }
+    
+    $jwt = $matches[1];
+    $secret = getenv('JWT_SECRET') ?: 'your-secret-key';
+    
+    $tokenParts = explode('.', $jwt);
+    if (count($tokenParts) !== 3) {
+        return false;
+    }
+    
+    list($base64UrlHeader, $base64UrlPayload, $base64UrlSignature) = $tokenParts;
+    
+    // Verify signature
+    $signature = base64_decode(str_replace(['-', '_'], ['+', '/'], $base64UrlSignature));
+    $expectedSignature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $secret, true);
+    
+    if (!hash_equals($signature, $expectedSignature)) {
+        return false;
+    }
+    
+    // Decode payload
+    $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $base64UrlPayload)), true);
+    
+    if (!$payload || !isset($payload['user_id'])) {
+        return false;
+    }
+    
+    // Check token expiration
+    if (isset($payload['exp']) && time() > $payload['exp']) {
+        return false;
+    }
+    
+    return $payload;
+}
 ?>

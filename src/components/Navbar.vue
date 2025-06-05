@@ -7,21 +7,20 @@
         <span></span>
         <span></span>
       </button>
-    </div>
+    </div> <!-- Mobile menu with CSS animations -->
     <ul class="nav-links" :class="{ active: isMenuOpen }">
       <li v-for="link in navLinks" :key="link.path">
         <router-link :to="link.path" active-class="active" @click="closeMenu">
           {{ link.name }}
         </router-link>
-      </li>
-
-      <!-- Add cart link with item count -->
+      </li>      <!-- Add cart link with item count -->
       <li class="cart-link">
-        <router-link to="/cart" @click="closeMenu">
+        <router-link to="/cart" class="cart-button" @click="closeMenu">
           <span class="cart-icon">
             <i class="fas fa-shopping-cart"></i>
             <span v-if="cartStore.itemCount > 0" class="cart-count">{{ cartStore.itemCount }}</span>
           </span>
+          <span class="cart-text">Korpa</span>
         </router-link>
       </li>
 
@@ -65,14 +64,13 @@ export default {
 
     // Funkcija za uključivanje/isključivanje menija
     const toggleMenu = () => {
+      console.log("Toggling menu");
       isMenuOpen.value = !isMenuOpen.value;
-      document.body.style.overflow = isMenuOpen.value ? "hidden" : "auto";
     };
 
     // Funkcija za zatvaranje menija
     const closeMenu = () => {
       isMenuOpen.value = false;
-      document.body.style.overflow = "auto";
     };
 
     return {
@@ -97,7 +95,7 @@ export default {
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 11;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -155,12 +153,12 @@ export default {
   margin-left: 2rem;
   width: auto;
   max-width: none !important;
+  z-index: 100;
 }
 
 .hamburger-wrapper {
   position: relative;
-  z-index: 1002;
-  /* Higher than other elements */
+  z-index: 11;
   display: none;
 }
 
@@ -223,8 +221,8 @@ export default {
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
     box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    /* Lower than hamburger */
+    z-index: 9;
+    gap: 0.5rem;
   }
 
   .nav-links.active {
@@ -253,10 +251,10 @@ export default {
 
   .auth-links {
     max-width: none !important;
-    margin: 2rem 0 0;
+    margin: 0;
     width: 100%;
-    padding: 1rem 0;
-    border-top: 1px solid #e5e7eb;
+    padding: 0;
+    border: none;
   }
 }
 
@@ -265,43 +263,100 @@ export default {
   margin-left: 0.5rem;
 }
 
-.cart-icon {
-  position: relative;
-  font-size: 1.25rem;
-  color: #4b5563;
-  transition: color 0.3s ease;
+.cart-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 30px !important;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+  font-weight: 600;
 }
 
-.cart-icon:hover {
-  color: #6366f1;
+.cart-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+.cart-icon {
+  position: relative;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-text {
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .cart-count {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  background: #6366f1;
+  top: -8px;
+  right: -12px;
+  background: #ef4444;
   color: white;
   font-size: 0.7rem;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  animation: pulse-light 2s infinite;
+}
+
+@keyframes pulse-light {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }
 
 /* Ensure cart link is visible on mobile */
 @media (max-width: 960px) {
   .cart-link {
     width: 100%;
-    text-align: center;
-    margin: 0.5rem 0;
+    text-align: left;
+    margin: 0;
+  }
+
+  .cart-button {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 8px !important;
+    padding: 1rem 1.5rem !important;
+    margin-bottom: 0.5rem;
+    background: #6366f1;
   }
 
   .cart-icon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+  }
+  
+  .cart-text {
+    font-size: 1.1rem;
+  }
+  
+  .cart-count {
+    top: -8px;
+    right: -12px;
+    font-size: 0.75rem;
+    min-width: 20px;
+    height: 20px;
   }
 }
 </style>

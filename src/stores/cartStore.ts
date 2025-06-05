@@ -4,96 +4,116 @@ import type { CartItem } from '@/models';
 import type { Product } from '@/models/product';
 import { useNotification } from '@/utils/notifications';
 
+/**
+ * Pinia store za upravljanje korpom za kupovinu.
+ * Omogućava dodavanje, uklanjanje, ažuriranje količina proizvoda u korpi,
+ * kao i izračunavanje ukupne cene i broja stavki.
+ * Stanje korpe se čuva u localStorage-u.
+ */
 export const useCartStore = defineStore('cart', () => {
   const { showNotification } = useNotification();
-  const cartItems = ref<CartItem[]>([]);
+  const cartItems = ref<CartItem[]>([]); // Niz stavki u korpi
   
-  // Get cart total
+  /**
+   * Izračunava ukupnu vrednost svih stavki u korpi.
+   * @returns number - Ukupna cena.
+   */
   const cartTotal = computed(() => {
     return cartItems.value.reduce((total : any, item : any) => {
-      // Add null checks to prevent errors
       if (!item || !item.product) return total;
       
+      // Osigurava da je cena broj pre množenja
       const price = typeof item.product.cena === 'string' 
         ? parseFloat(item.product.cena) 
-        : (item.product.cena || 0); // Default to 0 if price is undefined
+        : (item.product.cena || 0); 
       return total + (price * item.quantity);
     }, 0);
   });
   
-  // Get total items count
+  /**
+   * Izračunava ukupan broj pojedinačnih proizvoda u korpi.
+   * @returns number - Ukupan broj proizvoda.
+   */
   const itemCount = computed(() => {
     return cartItems.value.reduce((count : any, item : any) => count + (item ? item.quantity : 0), 0);
   });
   
-  // Check if cart is empty
+  /**
+   * Proverava da li je korpa prazna.
+   * @returns boolean - True ako je korpa prazna, inače false.
+   */
   const isEmpty = computed(() => cartItems.value.length === 0);
   
-  // Initialize cart from localStorage
+  /**
+   * Inicijalizuje stanje korpe iz localStorage-a.
+   * Ako postoje sačuvane stavke, učitava ih.
+   * U slučaju greške ili nevalidnih podataka, korpa se resetuje.
+   */
   const initializeCart = () => {
     try {
       const storedCart = localStorage.getItem('cart');
       if (storedCart) {
-        cartItems.value = JSON.parse(storedCart);
-        // Filter out any invalid items that don't have product data
-        cartItems.value = cartItems.value.filter((item : any)=> item && item.product && item.product.id);
+        let parsedCart = JSON.parse(storedCart);
+        // Filtriranje nevalidnih stavki koje nemaju proizvod ili ID proizvoda
+        parsedCart = parsedCart.filter((item : any)=> item && item.product && typeof item.product.id !== 'undefined');
         
-        // If the stored cart was corrupt or empty after filtering, clear it
-        if (!Array.isArray(cartItems.value)) {
-          console.error('Cart was not an array, resetting');
+        if (!Array.isArray(parsedCart)) {
+          console.error('Podaci iz korpe nisu niz, korpa se resetuje.');
           cartItems.value = [];
-          saveCart();
+        } else {
+          cartItems.value = parsedCart;
         }
+      } else {
+        cartItems.value = []; // Ako nema sačuvane korpe, inicijalizuj kao prazan niz
       }
     } catch (error) {
-      console.error('Failed to initialize cart:', error);
-      // Reset cart if there's an error
-      cartItems.value = [];
-      localStorage.removeItem('cart');
+      console.error('Greška pri inicijalizaciji korpe:', error);
+      cartItems.value = []; // Resetuj korpu u slučaju greške
+      localStorage.removeItem('cart'); // Ukloni nevalidne podatke iz localStorage
     }
+    saveCart(); // Sačuvaj (potencijalno ispravljeno ili prazno) stanje
   };
   
-  // Save cart to localStorage
+  /**
+   * Čuva trenutno stanje korpe u localStorage.
+   */
   const saveCart = () => {
     try {
       localStorage.setItem('cart', JSON.stringify(cartItems.value));
     } catch (error) {
-      console.error('Failed to save cart:', error);
+      console.error('Greška pri čuvanju korpe:', error);
     }
   };
   
-  // Add product to cart
+  /**
+   * Dodaje proizvod u korpu ili povećava količinu ako već postoji.
+   * @param product - Proizvod koji se dodaje.
+   * @param quantity - Količina proizvoda (podrazumevano 1).
+   * @param silent - Ako je true, notifikacija o dodavanju se neće prikazati (podrazumevano false).
+   */
   const addItem = (product: Product, quantity = 1, silent = false) => {
     addToCart({ product, quantity, silent });
   };
   
-  // Add product to cart (using object parameter format)
+  /**
+   * Interna metoda za dodavanje proizvoda u korpu.
+   * @param options - Objekat sa proizvodom, količinom i silent flag-om.
+   */
   const addToCart = ({ product, quantity = 1, silent = false }: { product: Product; quantity?: number; silent?: boolean }) => {
-    console.log('Adding product to cart:', product);
-
-    // Ensure product is defined and has an id
-    if (!product) {
-      console.error('Attempted to add undefined product to cart');
-      if (!silent) showNotification('Nemoguće dodati proizvod u korpu.', 'error');
+    if (!product || typeof product.id === 'undefined') {
+      console.error('Pokušaj dodavanja nevalidnog proizvoda u korpu:', product);
+      if (!silent) showNotification('Nemoguće dodati proizvod u korpu (nevalidan proizvod).', 'error');
       return;
     }
 
-    // Use nullable check to ensure product.id exists
-    const productId = product.id;
-    if (!productId) {
-      console.error('Attempted to add product without id to cart:', product);
-      if (!silent) showNotification('Nemoguće dodati proizvod u korpu.', 'error');
-      return;
-    }
-
-    const existingItem = cartItems.value.find((item : any) => item.product && item.product.id === productId);
+    const existingItem = cartItems.value.find((item : any) => item.product && item.product.id === product.id);
     
     if (existingItem) {
       existingItem.quantity += quantity;
-      if (!silent) showNotification(`${product.naziv || 'Proizvod'} količina povećana (${existingItem.quantity}).`, 'success');
+      if (!silent) showNotification(`${product.naziv || 'Proizvod'} količina ažurirana na ${existingItem.quantity}.`, 'success');
     } else {
       cartItems.value.push({
-        id: Date.now(),  // Use timestamp as unique ID
+        id: Date.now(), // Jedinstveni ID za stavku u korpi
         product,
         quantity
       });
@@ -103,9 +123,13 @@ export const useCartStore = defineStore('cart', () => {
     saveCart();
   };
   
-  // Update item quantity
+  /**
+   * Ažurira količinu za određenu stavku u korpi.
+   * @param itemId - ID stavke u korpi.
+   * @param quantity - Nova količina. Ako je manja od 1, stavka se ne menja.
+   */
   const updateQuantity = (itemId: number, quantity: number) => {
-    if (quantity < 1) return;
+    if (quantity < 1) return; // Količina ne može biti manja od 1
     
     const item = cartItems.value.find((item : any)=> item.id === itemId);
     if (item) {
@@ -114,48 +138,67 @@ export const useCartStore = defineStore('cart', () => {
     }
   };
   
-  // Update item quantity by specific amount (can be negative)
+  /**
+   * Povećava ili smanjuje količinu stavke u korpi za određeni iznos.
+   * Ako nova količina postane 0 ili manja, stavka se uklanja iz korpe.
+   * @param itemId - ID stavke u korpi.
+   * @param amount - Iznos za koji se menja količina (može biti negativan).
+   */
   const updateItemQuantity = (itemId: number, amount: number) => {
     const item = cartItems.value.find((item : any)=> item.id === itemId);
     if (item) {
       const newQuantity = item.quantity + amount;
       if (newQuantity <= 0) {
-        // Remove item if quantity would be zero or negative
-        removeItem(itemId);
+        removeItem(itemId); // Ukloni stavku ako je količina 0 ili manja
       } else {
-        // Update quantity
         item.quantity = newQuantity;
         saveCart();
       }
     }
   };
 
-  // Remove item from cart
+  /**
+   * Uklanja stavku iz korpe na osnovu njenog ID-a.
+   * @param itemId - ID stavke koja se uklanja.
+   */
   const removeItem = (itemId: number) => {
-    const itemToRemove = cartItems.value.find((item : any) => item.id === itemId);
-    cartItems.value = cartItems.value.filter((item : any)=> item.id !== itemId);
-    saveCart();
-    
-    if (itemToRemove?.product?.naziv) {
-      showNotification(`${itemToRemove.product.naziv} uklonjen iz korpe.`, 'success');
+    const itemIndex = cartItems.value.findIndex((item : any) => item.id === itemId);
+    if (itemIndex > -1) {
+      const itemToRemove = cartItems.value[itemIndex];
+      cartItems.value.splice(itemIndex, 1);
+      saveCart();
+      if (itemToRemove?.product?.naziv) {
+        showNotification(`${itemToRemove.product.naziv} uklonjen iz korpe.`, 'success');
+      }
+    } else {
+      console.warn(`Pokušaj uklanjanja nepostojeće stavke (ID: ${itemId}) iz korpe.`);
     }
   };
 
-  // Remove product from cart (by product ID)
+  /**
+   * Uklanja sve stavke određenog proizvoda iz korpe na osnovu ID-a proizvoda.
+   * @param productId - ID proizvoda koji se uklanja.
+   */
   const removeFromCart = (productId: number) => {
-    console.log('Removing product with ID:', productId);
-    cartItems.value = cartItems.value.filter((item : any )=> item.product && item.product.id !== productId);
-    saveCart();
+    const initialLength = cartItems.value.length;
+    cartItems.value = cartItems.value.filter((item : any )=> !(item.product && item.product.id === productId));
+    if (cartItems.value.length < initialLength) {
+      saveCart();
+      // Može se dodati notifikacija ako je potrebno
+      console.log(`Sve stavke proizvoda sa ID ${productId} su uklonjene.`);
+    }
   };
   
-  // Clear cart
+  /**
+   * Prazni celu korpu.
+   */
   const clearCart = () => {
     cartItems.value = [];
     saveCart();
+    showNotification('Korpa je ispražnjena.', 'info');
   };
   
-  // Initialize cart when store is created
-  initializeCart();
+  initializeCart(); // Inicijalizacija korpe prilikom kreiranja stora
   
   return {
     cartItems,
@@ -163,7 +206,7 @@ export const useCartStore = defineStore('cart', () => {
     itemCount,
     isEmpty,
     initializeCart,
-    addItem, // Keep the original method for backward compatibility
+    addItem,
     addToCart,
     updateQuantity,
     updateItemQuantity,

@@ -25,8 +25,8 @@
 </template>
 
 <script lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotification } from "@/utils/notifications";
 
@@ -34,11 +34,18 @@ export default {
   name: "LoginView",
   setup() {
     const router = useRouter();
+    const route = useRoute();
     const authStore = useAuthStore();
     const { showNotification } = useNotification();
 
     const email = ref("");
     const password = ref("");
+
+    onMounted(() => {
+      if (route.query.reason === "inactivity") {
+        showNotification?.("You have been logged out due to inactivity.", "info");
+      }
+    });
 
     const handleLogin = async () => {
       if (!email.value || !password.value) {

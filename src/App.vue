@@ -1,19 +1,19 @@
 <script lang="ts">
 import "./assets/main.css";
 import Navbar from "./components/Navbar.vue";
-import { onBeforeMount, onUnmounted, defineComponent } from "vue";
+import { onBeforeMount, onUnmounted, defineComponent, onMounted } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import { useActivityTracker } from "@/services/activityTracker";
 import { useProductStore } from "@/stores/productStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useNotification } from "@/utils/notifications";
+import { setupModalContainer } from "@/utils/modalUtils";
 
 export default defineComponent({
   name: "App",
   components: {
     Navbar
-  },
-  setup() {
+  }, setup() {
     const authStore = useAuthStore();
     const activityTracker = useActivityTracker();
     const productStore = useProductStore();
@@ -36,6 +36,11 @@ export default defineComponent({
       }
     });
 
+    // Setup the modal container
+    onMounted(() => {
+      setupModalContainer();
+    });
+
     // Izvršava se pre demontiranja komponente.
     onUnmounted(() => {
       // Zaustavlja praćenje aktivnosti.
@@ -53,6 +58,7 @@ export default defineComponent({
 <template>
   <div id="app">
     <Navbar />
+    <div id="modal-container"></div>
     <router-view></router-view>
     <div v-if="notification" :class="['notification', `notification-${notification.type}`]">
       {{ notification.message }}
@@ -67,6 +73,54 @@ export default defineComponent({
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   position: relative;
+}
+
+/* Basic modal positioning */
+body .modal-content,
+body .modal-container {
+  position: fixed;
+}
+
+body .modal,
+body .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  /* High z-index to ensure modals are above other elements */
+}
+
+/* Special handling for profile modals */
+body .profile-modal {
+  z-index: 2001;
+  /* Even higher z-index for profile modals */
+}
+
+/* Ensure the modal container is correctly positioned */
+#modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  /* Allows clicking through the container when empty */
+  z-index: 2000;
+}
+
+/* But modal content should capture pointer events */
+#modal-container>* {
+  pointer-events: auto;
+}
+
+/* Ensure close buttons are visible */
+body .close-btn,
+body .close-button {
+  position: relative;
+  z-index: 5;
+  /* Local z-index to ensure visibility within modal */
 }
 
 .notification {

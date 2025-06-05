@@ -4,8 +4,9 @@ import Home from "../pages/Home.vue";
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
 import Profile from '../components/Profile.vue';
-import Cart from '@/pages/Cart.vue'; // Add this import
+import Cart from '@/pages/Cart.vue';
 import { useAuthStore } from '@/stores/authStore';
+import AdminOrders from '@/pages/admin/AdminOrders.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -61,6 +62,13 @@ const routes: RouteRecordRaw[] = [
     path: "/profile",
     name: "profile",
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/orders',
+    name: 'AdminOrders',
+    component: AdminOrders,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
     path: "/:pathMatch(.*)*",
@@ -77,11 +85,22 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
   
-  // If trying to access profile page and not logged in, redirect to login
-  if (to.path === '/profile' && !authStore.isAuthenticated) {
-    next('/login');
-  } else {
-    next();
+  // Provera da li ruta zahteva autentifikaciju
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/login'); // Preusmeri na login ako nije autentifikovan
+  } 
+  // Provera da li ruta zahteva admin prava
+  else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    // Možeš preusmeriti na neku 'zabranjeno' stranicu ili na početnu
+    console.warn('Pokušaj pristupa admin ruti od strane ne-administratora.');
+    next('/'); // Preusmeri na početnu stranicu
+  } 
+  // Originalna provera za /profile, sada pokrivena sa to.meta.requiresAuth
+  // if (to.path === '/profile' && !authStore.isAuthenticated) {
+  //   next('/login');
+  // } 
+  else {
+    next(); // Dozvoli navigaciju
   }
 });
 

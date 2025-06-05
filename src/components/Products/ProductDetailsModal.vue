@@ -1,42 +1,40 @@
 <template>
-  <Transition name="modal">
-    <div v-if="show" class="modal-overlay" @click.self.stop>
-      <Transition name="modal-content">
-        <div v-if="show" class="modal-content" @click.stop>
-          <button class="close-button" @click="closeModal">&times;</button>
-          <div class="product-detail">
-            <div v-if="loading" class="loading">Loading product details...</div>
-            <div v-else-if="error" class="error">{{ error }}</div>
-            <div v-else-if="product" class="product-container">
-              <div class="product-image">
-                <img :src="product.slika_url || '/images/placeholder-product.jpg'" :alt="product.naziv" />
+  <Teleport to="#modal-container" v-if="show">
+    <div class="modal-overlay product-modal">
+      <div class="modal-content">
+        <button class="close-button" @click="closeModal">&times;</button>
+        <div class="product-detail">
+          <div v-if="loading" class="loading">Loading product details...</div>
+          <div v-else-if="error" class="error">{{ error }}</div>
+          <div v-else-if="product" class="product-container">
+            <div class="product-image">
+              <img :src="product.slika_url || '/images/placeholder-product.jpg'" :alt="product.naziv" />
+            </div>
+            <div class="product-info">
+              <h2>{{ product.naziv }}</h2>
+              <p class="description">{{ product.opis }}</p>
+              <p class="price">{{ formatPrice(product.cena) }}</p>
+              <div class="quantity-control">
+                <button @click="decreaseQuantity" :disabled="quantity <= 1">
+                  -
+                </button>
+                <span>{{ quantity }}</span>
+                <button @click="increaseQuantity">+</button>
               </div>
-              <div class="product-info">
-                <h2>{{ product.naziv }}</h2>
-                <p class="description">{{ product.opis }}</p>
-                <p class="price">{{ formatPrice(product.cena) }}</p>
-                <div class="quantity-control">
-                  <button @click="decreaseQuantity" :disabled="quantity <= 1">
-                    -
-                  </button>
-                  <span>{{ quantity }}</span>
-                  <button @click="increaseQuantity">+</button>
-                </div>
-                <div class="button-group">
-                  <button @click="handleAddToCart" class="add-to-cart-btn" :disabled="loading">
-                    Dodaj u korpu
-                  </button>
-                  <button @click="navigateToDetails" class="view-details-btn">
-                    Pogledaj detalje
-                  </button>
-                </div>
+              <div class="button-group">
+                <button @click="handleAddToCart" class="add-to-cart-btn" :disabled="loading">
+                  Dodaj u korpu
+                </button>
+                <button @click="navigateToDetails" class="view-details-btn">
+                  Pogledaj detalje
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </Transition>
+      </div>
     </div>
-  </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -130,7 +128,7 @@ const formatPrice = (price: number | undefined): string => {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
   padding: 1rem;
 }
 
@@ -379,17 +377,61 @@ const formatPrice = (price: number | undefined): string => {
 }
 
 @media (max-width: 768px) {
-  .product-container {
-    grid-template-columns: 1fr;
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: stretch !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    /* z-index handled by global styling */
   }
 
   .modal-content {
-    padding: 1.5rem;
+    width: 100% !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    /* Support for devices with notches/safe areas */
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    margin: 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    /* z-index handled by global styling */
+  }
+
+  .product-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
   }
 
   .close-button {
     top: 1rem;
     right: 1rem;
+    z-index: 10;
+    padding: 1rem;
+    font-size: 1.75rem;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .add-to-cart-btn,
+  .view-details-btn {
+    min-height: 44px;
+    font-size: 1rem;
   }
 }
 </style>

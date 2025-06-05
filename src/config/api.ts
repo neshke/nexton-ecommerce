@@ -1,5 +1,5 @@
 // API URLs
-const BASE_URL = "http://192.168.1.2:8080";
+const BASE_URL = "http://93.86.80.61:8080";
 
 export const API_URLS = {
   BASE: BASE_URL,
@@ -22,7 +22,14 @@ export const API_URLS = {
     DELETE: `${BASE_URL}/nexton/api/categories/index.php`,
   },
   ORDERS: {
-    CREATE: `${BASE_URL}/nexton/api/orders/index.php`,
-    READ: `${BASE_URL}/nexton/api/orders/index.php`,
-  },
+    CREATE: `${BASE_URL}/nexton/api/orders/create_order.php`,
+    GET_USER_ORDERS: `${BASE_URL}/nexton/api/orders/get_user_orders.php`,
+    GET_ALL_ORDERS_ADMIN: `${BASE_URL}/nexton/api/orders/get_all_orders_admin.php`
+  }, PROFILE: {
+    GET: `${BASE_URL}/nexton/api/profile/index.php`,
+    UPDATE: `${BASE_URL}/nexton/api/profile/index.php`,
+    CHANGE_PASSWORD: `${BASE_URL}/nexton/api/profile/change-password.php`,
+  }, CONTACT: {
+    SEND_MESSAGE: `${BASE_URL}/nexton/api/contact/send_message.php`,
+  }
 };

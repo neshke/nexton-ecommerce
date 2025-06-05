@@ -8,44 +8,69 @@
         <p class="hero-subtitle animate-slide-up" style="animation-delay: 0.2s">
           {{ welcomeMessage }}
         </p>
-        <div class="hero-buttons animate-slide-up" style="animation-delay: 0.4s">
-          <button class="hero-btn primary" @click="handleEditProfile">
-            Izmeni Profil
-          </button>
-        </div>
       </div>
     </header>
 
     <main class="profile-content animate-fade-in">
       <div class="profile-grid">
-        <UserCard :user="user" class="animate-slide-up" style="animation-delay: 0.6s" />
-        <AccountActions @logout="handleLogout" class="animate-slide-up" style="animation-delay: 0.8s" />
+        <UserCard v-if="user" :user="user" class="animate-slide-up" style="animation-delay: 0.6s" />
+        <AccountActions @logout="handleLogout" @change-password="handleChangePassword"
+          @confirm-logout="handleConfirmLogout" @edit-profile="handleEditProfile" class="animate-slide-up"
+          style="animation-delay: 0.8s" />
       </div>
-    </main>
+
+      <!-- Dodata UserOrders komponenta -->
+      <UserOrders class="animate-slide-up" style="animation-delay: 1s; margin-top: 2rem;" />
+    </main> <!-- Edit Profile Modal -->
+    <EditProfileModal v-model:show="isEditProfileModalVisible" :user="user"
+      @close="isEditProfileModalVisible = false" /> <!-- Change Password Modal -->
+    <ChangePasswordModal :isVisible="isChangePasswordModalVisible" @close="isChangePasswordModalVisible = false"
+      @success="isChangePasswordModalVisible = false" />
+
+    <!-- Logout Confirmation Modal -->
+    <LogoutConfirmModal :isVisible="isLogoutConfirmModalVisible" @close="isLogoutConfirmModalVisible = false"
+      @confirm="handleLogout" />
   </div>
 </template>
 
 <script lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotification } from '@/utils/notifications';
 import UserCard from '@/components/profile/UserCard.vue';
 import AccountActions from '@/components/profile/AccountActions.vue';
+import UserOrders from '@/components/profile/UserOrders.vue';
+import { useProfileStore } from '@/stores/profileStore';
+import EditProfileModal from '@/components/profile/EditProfileModal.vue';
+import ChangePasswordModal from '@/components/profile/ChangePasswordModal.vue';
+import LogoutConfirmModal from '@/components/profile/LogoutConfirmModal.vue';
 
 export default {
-  name: "Profile",
-  components: {
+  name: "Profile", components: {
     UserCard,
-    AccountActions
+    AccountActions,
+    UserOrders,
+    EditProfileModal,
+    ChangePasswordModal,
+    LogoutConfirmModal
   },
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
+    const profileStore = useProfileStore();
     const { showNotification } = useNotification();
+    const isEditProfileModalVisible = ref(false); 
+    const isChangePasswordModalVisible = ref(false);
+    const isLogoutConfirmModalVisible = ref(false); 
 
-    // Računanje korisničkih podataka
-    const user = computed(() => authStore.user);
+    const user = computed(() => profileStore.user);
+
+    onMounted(() => {
+      if (authStore.isAuthenticated && !profileStore.profile) {
+        profileStore.fetchUserProfile();
+      }
+    });
 
     // Generisanje prilagođene poruke dobrodošlice
     const welcomeMessage = computed(() => {
@@ -62,20 +87,29 @@ export default {
       await authStore.logout();
       showNotification('Uspešno ste se odjavili sa vašeg naloga.', 'success');
       router.push('/');
+    };    // Funkcija za uređivanje profila
+    const handleEditProfile = () => {
+      isEditProfileModalVisible.value = true; // Show the modal
+    };    // Funkcija za promenu lozinke
+    const handleChangePassword = () => {
+      isChangePasswordModalVisible.value = true; // Show the change password modal
     };
 
-    // Funkcija za uređivanje profila
-    const handleEditProfile = () => {
-      // Ovde će se implementirati logika za uređivanje profila
-      console.log('Funkcija za izmenu profila uskoro dolazi');
-      showNotification('Funkcija za izmenu profila uskoro dolazi.', 'info');
+    // Funkcija za prikazivanje logout confirmation modal-a
+    const handleConfirmLogout = () => {
+      isLogoutConfirmModalVisible.value = true;
     };
 
     return {
       user,
       welcomeMessage,
       handleLogout,
-      handleEditProfile
+      handleEditProfile,
+      handleChangePassword,
+      handleConfirmLogout,
+      isEditProfileModalVisible, // Expose the modal visibility state
+      isChangePasswordModalVisible, // Expose the change password modal visibility state
+      isLogoutConfirmModalVisible // Expose the logout confirmation modal visibility state
     };
   }
 }

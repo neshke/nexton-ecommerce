@@ -1,0 +1,139 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import type { User } from '@/models/auth';
+import { API_URLS } from '@/config/api';
+import axiosInstance from '@/config/axios';
+import { useNotification } from '@/utils/notifications';
+import { useAuthStore } from './authStore';
+
+export const useProfileStore = defineStore('profile', () => {
+  const { showNotification } = useNotification();
+  const authStore = useAuthStore();
+
+  const profile = ref<User | null>(null);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+
+  const user = computed(() => profile.value);
+
+  async function fetchUserProfile() {
+    if (!authStore.isAuthenticated || !authStore.tokenValue) {
+      return;
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await axiosInstance.get(API_URLS.PROFILE.GET);
+
+      if (response.data.status === 200) {
+        profile.value = response.data.data;
+
+        // Update user in authStore as well
+        if (authStore.user) {
+          Object.assign(authStore.user, response.data.data);
+        }
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Greška pri učitavanju profila');
+      }
+    } catch (err: any) {
+      console.error('Greška pri preuzimanju korisničkog profila:', err);
+      error.value = err.response?.data?.message || err.message || 'Došlo je do nepoznate greške';
+      if (error.value) {
+        showNotification(error.value, 'error');
+      }
+      return null;
+    } finally {
+      loading.value = false;
+    }
+  }
+  async function updateUserProfile(updatedData: Partial<User>) {
+    if (!authStore.isAuthenticated || !authStore.tokenValue) {
+      showNotification('Morate biti prijavljeni da biste ažurirali svoj profil.', 'error');
+      return false;
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await axiosInstance.put(API_URLS.PROFILE.UPDATE, updatedData);
+
+      if (response.data.status === 200) {
+        profile.value = response.data.data;
+        // Update user in authStore as well
+        if (authStore.user && response?.data?.data) {
+          Object.assign(authStore.user, response.data.data);
+          showNotification('Profil je uspešno ažuriran!', 'success');
+          return true;
+        }
+      } else {
+        throw new Error(response.data.message || 'Neuspešno ažuriranje profila');
+      }
+
+    } catch (err: any) {
+      console.error('Greška pri ažuriranju korisničkog profila:', err); error.value = err.response?.data?.message || err.message || 'Došlo je do nepoznate greške';
+      if (error.value) {
+        showNotification(error.value, 'error');
+      }
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async function changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<boolean> {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await axiosInstance.post(API_URLS.PROFILE.CHANGE_PASSWORD, {
+        currentPassword,
+        newPassword,
+        confirmPassword
+      }); if (response.data.status === 200) {
+        showNotification('Lozinka je uspešno promenjena!', 'success');
+        return true;
+      } else {
+        throw new Error(response.data.message || 'Greška pri promeni lozinke');
+      }
+    } catch (err: any) {
+      console.error('Greška pri promeni lozinke:', err); error.value = err.response?.data?.message || err.message || 'Došlo je do nepoznate greške';
+      showNotification(error.value || 'Došlo je do greške', 'error');
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Call fetchUserProfile when the store is initialized and user is authenticated
+  if (authStore.isAuthenticated) {
+    fetchUserProfile();
+  }
+
+  // Watch for changes in authentication state to fetch or clear profile
+  authStore.$subscribe((_mutation, state) => {
+    if (state.tokenValue && state.user) {
+      if (!profile.value) {
+        fetchUserProfile();
+      }
+    } else {
+      profile.value = null;
+    }
+  });
+
+  return {
+    profile,
+    loading,
+    error,
+    user,
+    fetchUserProfile,
+    updateUserProfile,
+    changePassword,
+  };
+});

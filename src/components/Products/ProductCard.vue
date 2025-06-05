@@ -1,12 +1,12 @@
 <template>
-  <div class="product-card" :class="{ 'list-view': viewMode === 'list' }">
-    <div class="product-image" @click="$emit('view-product', product)">
+  <div class="product-card" :class="{ 'list-view': viewMode === 'list' }" @click="showQuickView">
+    <div class="product-image">
       <img :src="product.slika_url || defaultImage" :alt="product.naziv" @error="handleImageError" />
       <div class="product-badges">
         <span v-if="isNew" class="badge new">Novo</span>
       </div>
       <div v-if="isAdmin" class="admin-controls">
-        <button @click.stop="handleEdit" title="Izmeni proizvod">
+        <button @click.stop="openEditModal" title="Izmeni proizvod">
           <i class="fas fa-edit"></i>
         </button>
         <button @click.stop="handleDelete" title="Obriši proizvod">
@@ -22,37 +22,39 @@
         </router-link>
       </h3>
       <div class="product-price">
-        <span class="current-price">{{ formatPrice(product.cena) }} RSD</span>
+        <span class="current-price">{{ formatPrice(product.cena) }}</span>
       </div>
       <div class="product-description" v-if="viewMode === 'list' && product.opis">
         {{ truncateDescription(product.opis, 150) }}
       </div>
       <div class="product-actions">
-        <button class="add-to-cart" @click="addToCart">
+        <button class="add-to-cart" @click.stop="addToCart">
           <span class="icon"><i class="fas fa-shopping-cart"></i></span>
           <span class="text">Dodaj u korpu</span>
-        </button>
-        <button class="quick-view" @click="showQuickView">
-          <span class="icon"><i class="fas fa-eye"></i></span>
-          <span class="text" v-if="viewMode === 'list'">Brzi pregled</span>
         </button>
       </div>
     </div>
   </div>
+  <EditProductFormModal :show="isEditModalVisible" :product="selectedProductForEdit" @close="closeEditModal"
+    @save="handleProductUpdate" />
 </template>
 
 <script lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, defineComponent } from "vue";
+import type { PropType } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useCategoryStore } from "@/stores/categoryStore";
-import { useRouter } from "vue-router";
+import { useProductStore } from "@/stores/productStore";
 import type { Product } from "@/models";
+import EditProductFormModal from "@/components/Products/EditProductFormModal.vue";
+import { useNotification } from "@/utils/notifications";
 
-export default {
+export default defineComponent({
+  name: 'ProductCard',
   props: {
     product: {
-      type: Object as () => Product,
+      type: Object as PropType<Product>,
       required: true,
     },
     viewMode: {
@@ -60,19 +62,24 @@ export default {
       default: "grid",
     },
   },
-  emits: ["show-quick-view", "delete", "view-product"],
+  components: {
+    EditProductFormModal,
+  },
+  emits: ["show-quick-view", "product-deleted", "view-product", "add-to-cart", "product-updated"],
   setup(props, { emit }) {
     const cartStore = useCartStore();
     const authStore = useAuthStore();
     const categoryStore = useCategoryStore();
-    const router = useRouter();
+    const productStore = useProductStore();
+    const { showNotification } = useNotification();
+
     const defaultImage = "/images/product-placeholder.png";
     const imageError = ref(false);
+    const isEditModalVisible = ref(false);
+    const selectedProductForEdit = ref<Product | null>(null);
 
-    // Check if user is admin
     const isAdmin = computed(() => authStore.isAdmin);
 
-    // Get category name based on categorija_id
     const categoryName = computed(() => {
       if (props.product.kategorija_id) {
         return categoryStore.getCategoryNameById(props.product.kategorija_id);
@@ -80,51 +87,79 @@ export default {
       return null;
     });
 
-    // Check if product is new (less than 14 days old)
     const isNew = computed(() => {
       if (!props.product.kreirano_at) return false;
-
       const createdDate = new Date(props.product.kreirano_at);
       const now = new Date();
       const diffTime = Math.abs(now.getTime() - createdDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
       return diffDays <= 14;
     });
 
-    // Format price with thousand separators
-    const formatPrice = (price: number): string => {
-      return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const formatPrice = (price: number | undefined): string => {
+      if (price === undefined || price === null) return "Nije dostupno";
+      return new Intl.NumberFormat("sr-RS", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 2, // Ensure two decimal places for currency
+        maximumFractionDigits: 2,
+      }).format(price);
     };
 
-    // Truncate description for list view
-    const truncateDescription = (text: string, length: number): string => {
+    const truncateDescription = (text: string | undefined, length: number): string => {
+      if (!text) return '';
       if (text.length <= length) return text;
       return text.substring(0, length) + "...";
     };
 
-    // Handle image loading error
     const handleImageError = () => {
       imageError.value = true;
     };
 
-    // Add to cart action
     const addToCart = () => {
       cartStore.addToCart({ product: props.product, quantity: 1 });
+      showNotification(`${props.product.naziv} je dodat u korpu.`, "success");
     };
 
-    // Show quick view action
-    const showQuickView = () => {
-      emit("show-quick-view", props.product);
+    const showQuickView = (event: MouseEvent) => {
+      // Prevent quick view if the click is on an admin control button
+      const target = event.target as HTMLElement;
+      if (target.closest('.admin-controls')) {
+        return;
+      }
+      emit("view-product", props.product);
     };
 
-    // Admin functions
-    const handleEdit = () => {
-      router.push({ name: 'AdminProductEdit', params: { id: props.product.id } });
+    const openEditModal = () => {
+      selectedProductForEdit.value = JSON.parse(JSON.stringify(props.product));
+      isEditModalVisible.value = true;
     };
 
-    const handleDelete = () => {
-      emit("delete", props.product.id);
+    const closeEditModal = () => {
+      isEditModalVisible.value = false;
+      selectedProductForEdit.value = null;
+    };
+
+    const handleProductUpdate = (updatedProduct: Product) => {
+      emit("product-updated", updatedProduct);
+      closeEditModal();
+    };
+
+    const handleDelete = async () => {
+      if (confirm('Da li ste sigurni da želite da obrišete ovaj proizvod?')) {
+        try {
+          if (props.product.id === undefined) {
+            showNotification("ID proizvoda nije definisan.", "error");
+            return;
+          }
+          await productStore.deleteProduct(props.product.id);
+          emit("product-deleted", props.product.id);
+          showNotification("Proizvod je uspešno obrisan!", "success");
+        } catch (error: any) {
+          console.error("Error deleting product:", error);
+          showNotification(error.message || "Greška prilikom brisanja proizvoda.", "error");
+        }
+      }
     };
 
     return {
@@ -138,11 +173,15 @@ export default {
       handleImageError,
       addToCart,
       showQuickView,
-      handleEdit,
       handleDelete,
+      isEditModalVisible,
+      selectedProductForEdit,
+      openEditModal,
+      closeEditModal,
+      handleProductUpdate,
     };
   },
-};
+});
 </script>
 
 <style scoped>
@@ -155,10 +194,11 @@ export default {
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
 }
 
-.product-card:hover {
+.product-card:hover:not(.admin-interaction) {
+  /* Apply hover effect only if not interacting with admin controls */
+  cursor: pointer;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   transform: translateY(-4px);
 }
@@ -169,6 +209,7 @@ export default {
   padding-top: 75%;
   overflow: hidden;
   background-color: #f9fafb;
+  cursor: pointer;
 }
 
 .product-image img {
@@ -178,12 +219,29 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  /* Changed from cover to contain */
+  /* Default for all product images */
   transition: transform 0.5s ease;
+  display: block;
+  /* Add display: block */
 }
 
-.product-card:hover .product-image img {
-  transform: scale(1.08);
+.product-card.list-view .product-image {
+  width: 200px;
+  min-width: 200px;
+  /* Ensure it doesn't shrink below this */
+  height: 200px;
+  padding-top: 0;
+  /* Override aspect ratio padding from grid view */
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+  /* Ensure no transparent background shows underlying elements */
+}
+
+.product-card.list-view .product-image img {
+  object-fit: contain;
+  /* Ensure images in list view are contained */
+  /* width and height 100% are inherited and will scale the image within the container */
 }
 
 .product-badges {
@@ -356,17 +414,19 @@ export default {
 /* List view styles */
 .product-card.list-view {
   flex-direction: row;
-  min-height: 200px;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .product-card.list-view .product-image {
-  width: 30%;
-  min-width: 30%;
+  width: 200px;
+  min-width: 200px;
+  height: 200px;
   padding-top: 0;
-  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-right: 1px solid #eee;
 }
 
 .product-card.list-view .product-image img {
@@ -377,26 +437,29 @@ export default {
 }
 
 .product-card.list-view .product-info {
-  width: 70%;
-  padding: 1.5rem;
+  flex: 1;
+  padding: 1rem;
 }
 
 .product-card.list-view .product-title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+}
+
+.product-card.list-view .product-description {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .product-card.list-view .product-actions {
-  margin-top: 1rem;
-  justify-content: flex-start;
+  margin-top: auto;
+  flex-direction: row;
+  gap: 0.75rem;
 }
 
-.product-card.list-view .quick-view {
-  width: auto;
+.product-card.list-view .add-to-cart {
+  flex: initial;
   padding: 0.5rem 1rem;
-}
-
-.product-card.list-view .quick-view .text {
-  display: inline;
 }
 
 @media (max-width: 768px) {

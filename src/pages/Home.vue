@@ -70,16 +70,6 @@
           </div>
         </div>
       </section>
-      <section class="newsletter animate-fade-in">
-        <div class="newsletter-content">
-          <h2>Ostanite Informisani</h2>
-          <p>Pretplatite se na naš newsletter za ekskluzivne ponude i novosti</p>
-          <form class="newsletter-form">
-            <input type="email" placeholder="Unesite vaš email" />
-            <button type="submit">Pretplati se</button>
-          </form>
-        </div>
-      </section>
     </main>
     <Footer />
   </div>
@@ -363,48 +353,6 @@ export default {
   height: 50px;
   border-radius: 50%;
   margin-right: 1rem;
-}
-
-.newsletter {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  padding: 4rem 2rem;
-  color: white;
-  text-align: center;
-}
-
-.newsletter-content {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.newsletter-form {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding: 0 clamp(1rem, 3vw, 2rem);
-}
-
-.newsletter-form input {
-  flex: 1;
-  padding: 1rem;
-  font-size: 1em;
-  border: none;
-  border-radius: 30px;
-}
-
-.newsletter-form button {
-  padding: 1rem 2rem;
-  font-size: 1em;
-  background-color: #ffd700;
-  color: #2d3748;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.newsletter-form button:hover {
-  transform: translateY(-2px);
 }
 
 .footer {

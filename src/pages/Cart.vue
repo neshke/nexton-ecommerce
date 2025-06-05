@@ -105,21 +105,17 @@ export default {
     const authStore = useAuthStore();
     const { showNotification } = useNotification();
 
-    // Stanje za učitavanje
     const loading = ref(false);
     const placeholder = ref(PLACEHOLDER_IMAGE);
 
-    // Podaci za prikaz korpe
     const cartItems = computed(() => cartStore.cartItems);
     const total = computed(() => cartStore.cartTotal);
     const itemCount = computed(() => cartStore.itemCount);
 
-    // Praćenje šifre za popust
     const discountCode = ref("");
     const discountApplied = ref(false);
     const discountAmount = ref(0);
 
-    // Računanje konačnog iznosa (sa mogućim popustom)
     const finalTotal = computed(() => {
       if (discountApplied.value) {
         return total.value - discountAmount.value;
@@ -127,23 +123,19 @@ export default {
       return total.value;
     });
 
-    // Prikaži praznu korpu
     const isCartEmpty = computed(() => cartItems.value.length === 0);
 
-    // Funkcija za skraćivanje teksta
     const truncate = (text: string | undefined, maxLength: number = 100): string => {
       if (!text) return '';
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
     };
 
-    // Funkcija koja se poziva kada slika proizvoda ne može da se učita
     const handleImageError = (event: Event) => {
       const target = event.target as HTMLImageElement;
       target.src = PLACEHOLDER_IMAGE;
     };
 
-    // Funkcija za formatiranje cene
     const formatPrice = (price: number): string => {
       return new Intl.NumberFormat("sr-RS", {
         style: "currency",
@@ -151,36 +143,31 @@ export default {
       }).format(price);
     };
 
-    // Funkcija za povećavanje količine proizvoda
     const increaseQuantity = (productId: number) => {
-      cartStore.updateItemQuantity(productId, 1); // +1
+      cartStore.updateItemQuantity(productId, 1);
     };
 
-    // Funkcija za smanjenje količine proizvoda
     const decreaseQuantity = (productId: number, currentQuantity: number) => {
       if (currentQuantity > 1) {
-        cartStore.updateItemQuantity(productId, -1); // -1
+        cartStore.updateItemQuantity(productId, -1);
       } else {
         removeItem(productId);
       }
     };
 
-    // Funkcija za uklanjanje proizvoda iz korpe
     const removeItem = (productId: number) => {
       cartStore.removeItem(productId);
       showNotification("Proizvod uklonjen iz korpe", "success");
     };
 
-    // Funkcija za primenu šifre za popust
     const applyDiscount = () => {
-      // Jednostavna validacija šifre (u stvarnoj aplikaciji ovo bi proveravalo backend)
       if (discountCode.value.toLowerCase() === "popust10") {
-        const discount = total.value * 0.1; // 10% popusta
+        const discount = total.value * 0.1;
         discountAmount.value = discount;
         discountApplied.value = true;
         showNotification("Popust od 10% uspešno primenjen!", "success");
       } else if (discountCode.value.toLowerCase() === "popust20") {
-        const discount = total.value * 0.2; // 20% popusta
+        const discount = total.value * 0.2;
         discountAmount.value = discount;
         discountApplied.value = true;
         showNotification("Popust od 20% uspešno primenjen!", "success");
@@ -189,14 +176,12 @@ export default {
       }
     };
 
-    // Funkcija za uklanjanje popusta
     const removeDiscount = () => {
       discountCode.value = "";
       discountApplied.value = false;
       discountAmount.value = 0;
     };
 
-    // Funkcija za prelazak na naplatu
     const proceedToCheckout = () => {
       if (authStore.isAuthenticated) {
         router.push("/checkout");
@@ -209,7 +194,6 @@ export default {
       }
     };
 
-    // Funkcija za nastavak kupovine
     const continueShopping = () => {
       router.push("/products");
     };
@@ -243,7 +227,6 @@ export default {
 <style scoped>
 @import "../assets/styles/shared.css";
 
-/* Layout */
 .cart-page {
   display: flex;
   flex-direction: column;
@@ -270,14 +253,12 @@ export default {
   font-weight: 700;
 }
 
-/* Grid layout */
 .cart-grid {
   display: grid;
   grid-template-columns: 1fr 350px;
   gap: 2rem;
 }
 
-/* Cart items */
 .cart-items {
   display: flex;
   flex-direction: column;
@@ -300,7 +281,6 @@ export default {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
-/* Product image */
 .item-image {
   width: 100%;
   height: 150px;
@@ -323,7 +303,6 @@ export default {
   transform: scale(1.05);
 }
 
-/* Product details */
 .item-details {
   display: flex;
   flex-direction: column;
@@ -349,7 +328,6 @@ export default {
   margin-bottom: 1rem;
 }
 
-/* Item actions */
 .item-actions {
   display: flex;
   align-items: center;
@@ -424,7 +402,6 @@ export default {
   margin-top: 0.5rem;
 }
 
-/* Cart summary */
 .summary {
   position: sticky;
   top: 2rem;
@@ -459,7 +436,6 @@ export default {
   font-weight: 700;
 }
 
-/* Buttons */
 .btn {
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
@@ -502,7 +478,6 @@ export default {
   text-decoration: underline;
 }
 
-/* Empty cart */
 .empty-cart {
   display: flex;
   align-items: center;
@@ -518,7 +493,6 @@ export default {
 
 .empty-content p {
   margin-bottom: 1.5rem;
-  /* Add space between paragraph and button */
 }
 
 .empty-icon {
@@ -534,7 +508,6 @@ export default {
   color: #6b7280;
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
   .cart-grid {
     grid-template-columns: 1fr;

@@ -148,20 +148,13 @@ export default defineComponent({
     };
 
     // Formatira cenu u EUR format
-    const formatPrice = (price: number | string | undefined) => {
-      if (price === undefined || price === null) {
-        return "Cena nije dostupna";
-      }
-
-      // Konvertuje u broj ako je string
-      const numPrice = typeof price === "string" ? parseFloat(price) : price;
-
-      // Proverava da li je validan broj
-      if (isNaN(numPrice)) {
-        return "Cena nije dostupna";
-      }
-
-      return `${numPrice.toFixed(2)} EUR`;
+    const formatPrice = (price: number | undefined): string => {
+      if (!price) return "Nije dostupno";
+      return new Intl.NumberFormat("sr-RS", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 0,
+      }).format(price);
     };
 
     // Rukuje pomeranjem miša preko slike za efekat zuma

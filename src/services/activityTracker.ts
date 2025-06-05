@@ -1,18 +1,26 @@
 import { useAuthStore } from "@/stores/authStore";
 import { ref } from "vue";
 
+/**
+ * Singleton klasa za praćenje neaktivnosti korisnika.
+ * Automatski odjavljuje korisnika nakon određenog perioda neaktivnosti.
+ */
 export class ActivityTracker {
   private static instance: ActivityTracker | null = null;
   private timeoutId: number | null = null;
   private isTracking = ref(false);
+  private boundResetTimer: () => void;
 
-  // Set inactivity timeout to 15 minutes
-  private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+  // Period neaktivnosti nakon kojeg se korisnik odjavljuje (15 minuta).
+  private readonly INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
   private constructor() {
-    // Remove initialization from constructor
+    this.boundResetTimer = this.resetInactivityTimer.bind(this);
   }
 
+  /**
+   * Vraća Singleton instancu ActivityTracker-a.
+   */
   public static getInstance(): ActivityTracker {
     if (!ActivityTracker.instance) {
       ActivityTracker.instance = new ActivityTracker();
@@ -20,6 +28,10 @@ export class ActivityTracker {
     return ActivityTracker.instance;
   }
 
+  /**
+   * Resetuje tajmer za praćenje neaktivnosti.
+   * Poziva se prilikom korisničke aktivnosti.
+   */
   private resetInactivityTimer(): void {
     console.info("Resetting inactivity timer");
 
@@ -33,21 +45,30 @@ export class ActivityTracker {
     }, this.INACTIVITY_TIMEOUT);
   }
 
+  /**
+   * Rukuje događajem kada istekne period neaktivnosti.
+   * Odjavljuje korisnika ako je autentifikovan.
+   */
   private handleInactivity(): void {
     const authStore = useAuthStore();
     if (authStore.isAuthenticated) {
       console.log("Logging out due to inactivity");
       authStore.logout().then(() => {
-        window.location.href = "/login?reason=inactivity";
+        window.location.href = "/login?reason=inactivity"; // Preusmeravanje na login stranicu
       });
+    } else {
+      console.log("Handle inactivity called, but user is not authenticated.");
     }
   }
 
+  /**
+   * Pokreće praćenje korisničke aktivnosti.
+   * Postavlja event listenere za detekciju aktivnosti.
+   */
   public startTracking(): void {
     console.log("Starting activity tracking");
     this.isTracking.value = true;
 
-    // Setup event listeners when starting tracking
     const events = [
       "mousedown",
       "mousemove",
@@ -57,20 +78,19 @@ export class ActivityTracker {
       "click",
     ];
 
-    // Remove existing event listeners if any
-    this.stopTracking();
-
-    const boundResetTimer = this.resetInactivityTimer.bind(this);
-    
-    // Add event listeners with properly bound context
+    // Uklanjanje postojećih listener-a pre dodavanja novih
     events.forEach((event) => {
-      document.addEventListener(event, boundResetTimer);
+      document.removeEventListener(event, this.boundResetTimer);
+      document.addEventListener(event, this.boundResetTimer);
     });
 
-    // Initial timer setup
-    this.resetInactivityTimer();
+    this.resetInactivityTimer(); // Inicijalno postavljanje tajmera
   }
 
+  /**
+   * Zaustavlja praćenje korisničke aktivnosti.
+   * Uklanja event listenere i briše tajmer.
+   */
   public stopTracking(): void {
     console.log("Stopping activity tracking");
     this.isTracking.value = false;
@@ -79,7 +99,6 @@ export class ActivityTracker {
       this.timeoutId = null;
     }
     
-    // Remove all event listeners
     const events = [
       "mousedown",
       "mousemove",
@@ -89,13 +108,15 @@ export class ActivityTracker {
       "click",
     ];
     
-    const boundResetTimer = this.resetInactivityTimer.bind(this);
     events.forEach((event) => {
-      document.removeEventListener(event, boundResetTimer);
+      document.removeEventListener(event, this.boundResetTimer);
     });
   }
 }
 
+/**
+ * Kompozitna funkcija za dobijanje instance ActivityTracker-a.
+ */
 export const useActivityTracker = () => {
   return ActivityTracker.getInstance();
 };

@@ -1,569 +1,477 @@
 <template>
-  <div class="products-page">
-    <main class="main-content">
-      <Header title="Naši" highlighted="Proizvodi" subtitle="Otkrijte neverovatne proizvode pažljivo odabrane za vas" />
-
-      <section class="products-section animate-fade-in">
-        <div class="container">
-          <div class="products-header">
-            <ProductsMenu :initialSort="sortOption" :initialView="viewMode" :categories="categories"
-              @sort-change="handleSortChange" @view-change="handleViewChange" @filter-change="handleFilterChange" />
-          </div>
-
-          <template v-if="loading">
-            <div class="loading">Loading products...</div>
-          </template>
-          <template v-else-if="error">
-            <div class="error">{{ error }}</div>
-          </template>
-          <template v-else>
-            <div v-if="filteredProducts.length === 0" class="no-products">
-              Nema proizvoda koji odgovaraju vašim filterima.
-              <button @click="resetFilters" class="reset-btn">
-                Resetuj filtere
-              </button>
-            </div>
-            <ProductList v-else :key="viewMode" :products="filteredProducts" :viewMode="viewMode" :isAdmin="isAdmin"
-              @add-to-cart="handleAddToCart" @view-product="handleViewProduct"
-              @add-product="showAddProductModal = true" />
-          </template>
+  <div class="products-page-wrapper">
+    <div class="products-page-content">
+      <div v-if="authStore.isAdmin" class="admin-actions-header">
+        <button class="add-product-button-header" @click="openProductFormModal">
+          <i class="fas fa-plus"></i> Dodaj novi proizvod
+        </button>
+      </div>
+      <ProductsMenu @filters-changed="applyFilters" @sort-changed="applySort" @search-changed="applySearch"
+        @view-change="updateViewMode" />
+      <div class="product-grid-container">
+        <div v-if="loading || categoryLoading" class="loading-state">
+          <p>Učitavanje podataka...</p>
         </div>
-      </section>
-
-      <section class="newsletter animate-slide-up">
-        <div class="newsletter-content">
-          <h2>Budite u toku</h2>
-          <p>Prijavite se za obaveštenja o novim proizvodima i ekskluzivnim ponudama</p>
-          <form class="newsletter-form" @submit.prevent="handleSubscribe">
-            <input v-model="email" type="email" placeholder="Unesite vaš email" required />
-            <button type="submit">Prijavi se</button>
-          </form>
+        <div v-else-if="error || categoryError" class="error-state">
+          <p>{{ error || categoryError }}</p>
         </div>
-      </section>
-    </main>
-
-    <ProductDetailsModal :show="showProductModal" :product="selectedProduct" @close="closeProductModal"
-      @add-to-cart="handleAddToCart" />
-
-    <ProductFormModal :show="showAddProductModal" :categories="categories" @close="closeAddProductModal"
-      @save="handleAddProduct" />
-
+        <div v-else-if="paginatedProducts.length === 0" class="empty-state">
+          <p>Nema proizvoda koji odgovaraju vašim filterima.</p>
+        </div>
+        <ProductList v-else :products="paginatedProducts" :view-mode="viewMode" @view-product="showProductDetailsModal"
+          @product-deleted="handleProductDeleted" />
+      </div>
+      <div class="pagination-controls">
+        <button @click="prevPage" :disabled="currentPage === 1">Prethodna</button>
+        <span>Stranica {{ currentPage }} od {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">Sledeća</button>
+      </div>
+    </div>
     <Footer />
+    <ProductDetailsModal :show="!!selectedProductForModal" :product="selectedProductForModal"
+      @close="closeProductDetailsModal" />
+    <ProductFormModal :show="isProductFormModalVisible" @close="closeProductFormModal" @save="handleProductSaved" />
   </div>
 </template>
 
 <script lang="ts">
-import { ref, onBeforeMount, computed } from "vue";
-import { useProductStore } from "@/stores/productStore";
-import { useCartStore } from "@/stores/cartStore";
-import { useAuthStore } from "@/stores/authStore";
-import { useNotification } from "@/utils/notifications";
-import type { Product, Category } from "@/models";
-import ProductList from "@/components/Products/ProductList.vue";
-import ProductsMenu from "@/components/Products/ProductsMenu.vue";
-import ProductDetailsModal from "@/components/Products/ProductDetailsModal.vue";
-import ProductFormModal from "@/components/Products/ProductFormModal.vue";
-import Header from "@/components/Header.vue";
+import { defineComponent, ref, computed, onMounted } from 'vue';
+import { useProductStore } from '@/stores/productStore';
+import { useCategoryStore } from '@/stores/categoryStore';
+import { useAuthStore } from '@/stores/authStore';
+import ProductList from '@/components/Products/ProductList.vue';
+import ProductsMenu from '@/components/Products/ProductsMenu.vue';
 import Footer from "@/components/Footer.vue";
+import ProductDetailsModal from '@/components/Products/ProductDetailsModal.vue';
+import ProductFormModal from '@/components/Products/ProductFormModal.vue';
+import type { Product, FilterOptions } from '@/models';
+import { useNotification } from '@/utils/notifications';
 
-export default {
-  name: "Products",
+export default defineComponent({
+  name: 'ProductsPage',
   components: {
     ProductList,
     ProductsMenu,
-    Header,
     Footer,
     ProductDetailsModal,
     ProductFormModal
   },
   setup() {
     const productStore = useProductStore();
-    const cartStore = useCartStore();
+    const categoryStore = useCategoryStore();
     const authStore = useAuthStore();
     const { showNotification } = useNotification();
 
-    // State references
+    const products = computed(() => productStore.products);
+    const categories = computed(() => categoryStore.categories);
     const loading = ref(false);
     const error = ref<string | null>(null);
-    const viewMode = ref("grid");
-    const sortOption = ref("name-asc");
-    const email = ref("");
-    const selectedProduct = ref<Product | null>(null);
-    const showProductModal = ref(false);
-    const showAddProductModal = ref(false);
+    const categoryLoading = computed(() => categoryStore.loading);
+    const categoryError = computed(() => categoryStore.error);
 
-    // Filters
-    const filters = ref({
-      searchTerm: "",
-      categoryId: null as number | null,
-      minPrice: null as number | null,
-      maxPrice: null as number | null,
-      sortBy: "name-asc"
+    const viewMode = ref<'grid' | 'list'>('grid');
+    const selectedProductForModal = ref<Product | null>(null);
+    const isProductFormModalVisible = ref(false);
+
+    const currentFilters = ref<FilterOptions>({ categories: null, minPrice: null, maxPrice: null });
+    const currentSort = ref<string>('name_asc');
+    const currentSearchTerm = ref<string>('');
+
+    const currentPage = ref(1);
+    const itemsPerPage = ref(12);
+
+    const filteredAndSortedProducts = computed(() => {
+      let tempProducts = [...products.value];
+
+      if (currentSearchTerm.value) {
+        tempProducts = tempProducts.filter(product =>
+          product.naziv.toLowerCase().includes(currentSearchTerm.value.toLowerCase())
+        );
+      }
+
+      if (currentFilters.value.categories && currentFilters.value.categories.length > 0) {
+        tempProducts = tempProducts.filter(product => currentFilters.value.categories!.includes(product.kategorija_id));
+      }
+      if (currentFilters.value.minPrice !== null) {
+        tempProducts = tempProducts.filter(product => product.cena >= currentFilters.value.minPrice!);
+      }
+      if (currentFilters.value.maxPrice !== null) {
+        tempProducts = tempProducts.filter(product => product.cena <= currentFilters.value.maxPrice!);
+      }
+
+      switch (currentSort.value) {
+        case 'price_asc':
+          tempProducts.sort((a, b) => a.cena - b.cena);
+          break;
+        case 'price_desc':
+          tempProducts.sort((a, b) => b.cena - a.cena);
+          break;
+        case 'name_asc':
+          tempProducts.sort((a, b) => a.naziv.localeCompare(b.naziv));
+          break;
+        case 'name_desc':
+          tempProducts.sort((a, b) => b.naziv.localeCompare(a.naziv));
+          break;
+      }
+      return tempProducts;
     });
 
-    // Computed properties
-    const categories = computed(() => {
-      // Extract unique categories from products
-      const uniqueCategories = new Map<number, Category>();
-
-      productStore.products.forEach(product => {
-        if (product.kategorija_id && product.category) {
-          uniqueCategories.set(product.kategorija_id, {
-            id: product.kategorija_id,
-            naziv: product.category.naziv || `Kategorija ${product.kategorija_id}`,
-            url_slug: product.category.url_slug || '',
-            opis: product.category.opis || '',
-            aktivan: product.category.aktivan !== undefined ? product.category.aktivan : true
-          });
-        }
-      });
-
-      return Array.from(uniqueCategories.values());
+    /**
+     * Izračunava ukupan broj stranica za paginaciju.
+     */
+    const totalPages = computed(() => {
+      return Math.ceil(filteredAndSortedProducts.value.length / itemsPerPage.value);
     });
 
-
-    // Filtered products based on filters
-    const filteredProducts = computed(() => {
-      let filtered = productStore.getProducts
-
-      // Search by name or description
-      if (filters.value.searchTerm) {
-        const searchTerm = filters.value.searchTerm.toLowerCase();
-        filtered = filtered.filter(
-          product =>
-            (product.naziv ? product.naziv.toLowerCase().includes(searchTerm) : false) ||
-            (product.opis ? product.opis.toLowerCase().includes(searchTerm) : false)
-        );
-      }
-
-      // Filter by category
-      if (filters.value.categoryId) {
-        filtered = filtered.filter(
-          product => product.kategorija_id === filters.value.categoryId
-        );
-      }
-
-      // Filter by min price
-      if (filters.value.minPrice !== null) {
-        filtered = filtered.filter(
-          product => (product.cena || 0) >= (filters.value.minPrice || 0)
-        );
-      }
-
-      // Filter by max price
-      if (filters.value.maxPrice !== null) {
-        filtered = filtered.filter(
-          product => (product.cena || 0) <= (filters.value.maxPrice || 0)
-        );
-      }
-
-      // Sort products
-      switch (filters.value.sortBy) {
-        case "name-asc":
-          filtered.sort((a, b) => (a.naziv || '').localeCompare(b.naziv || ''));
-          break;
-        case "name-desc":
-          filtered.sort((a, b) => (b.naziv || '').localeCompare(a.naziv || ''));
-          break;
-        case "price-asc":
-          filtered.sort((a, b) => (a.cena || 0) - (b.cena || 0));
-          break;
-        case "price-desc":
-          filtered.sort((a, b) => (b.cena || 0) - (a.cena || 0));
-          break;
-      }
-
-      // Return filtered products without any image processing
-      return filtered;
+    /**
+     * Vraća proizvode za trenutnu stranicu paginacije.
+     */
+    const paginatedProducts = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage.value;
+      const end = start + itemsPerPage.value;
+      return filteredAndSortedProducts.value.slice(start, end);
     });
 
-    // Initialization
-    onBeforeMount(async () => {
+    /**
+     * Asinhrono dohvata inicijalne podatke o proizvodima i kategorijama.
+     * Postavlja stanje učitavanja i grešaka.
+     */
+    const fetchInitialData = async () => {
       loading.value = true;
+      error.value = null;
       try {
-        console.log("Fetching products and categories...");
-        await productStore.fetchProducts();
-      } catch (err) {
-        console.error("Error loading products or categories:", err);
-        error.value = "Došlo je do greške pri učitavanju proizvoda.";
+        await Promise.all([
+          productStore.fetchProducts(),
+          categoryStore.fetchCategories()
+        ]);
+      } catch (err: any) {
+        console.error('Error fetching initial product data:', err);
+        error.value = 'Došlo je do greške pri učitavanju proizvoda.';
+        showNotification(error.value, 'error');
       } finally {
         loading.value = false;
       }
+    };
+
+    /**
+     * Asinhrono osvežava listu proizvoda.
+     */
+    const refreshProducts = async () => {
+      console.log("Refreshing products list...");
+      await productStore.fetchProducts();
+    };
+
+    onMounted(() => {
+      fetchInitialData();
     });
 
-    // Event handlers
-    const handleSortChange = (option: string) => {
-      sortOption.value = option;
-      filters.value.sortBy = option;
+    /**
+     * Primenjuje izabrane filtere na listu proizvoda.
+     * @param filters Opcije filtera.
+     */
+    const applyFilters = (filters: FilterOptions) => {
+      currentFilters.value = filters;
+      currentPage.value = 1;
     };
 
-    const handleViewChange = (mode: string) => {
-      viewMode.value = mode;
+    /**
+     * Primenjuje izabrani način sortiranja na listu proizvoda.
+     * @param sortKey Ključ za sortiranje.
+     */
+    const applySort = (sortKey: string) => {
+      currentSort.value = sortKey;
+      currentPage.value = 1;
     };
 
-    const handleFilterChange = (newFilters: any) => {
-      filters.value = { ...filters.value, ...newFilters };
+    /**
+     * Primenjuje uneti termin za pretragu na listu proizvoda.
+     * @param searchTerm Termin za pretragu.
+     */
+    const applySearch = (searchTerm: string) => {
+      currentSearchTerm.value = searchTerm;
+      currentPage.value = 1;
     };
 
-    const resetFilters = () => {
-      filters.value = {
-        searchTerm: "",
-        categoryId: null,
-        minPrice: null,
-        maxPrice: null,
-        sortBy: "name-asc"
-      };
-      sortOption.value = "name-asc";
-    };
-
-    const handleAddToCart = ({ product, quantity = 1 }: { product: Product; quantity?: number }) => {
-      if (!product || !product.id) {
-        console.error("Attempted to add invalid product to cart:", product);
-        return;
-      }
-
-      cartStore.addToCart({ product, quantity });
-      // Notification is now handled inside the cartStore
-    };
-
-    const handleViewProduct = (product: Product) => {
-      selectedProduct.value = product;
-      showProductModal.value = true;
-    };
-
-    const closeProductModal = () => {
-      showProductModal.value = false;
-      selectedProduct.value = null;
-    };
-
-    const closeAddProductModal = () => {
-      showAddProductModal.value = false;
-    };
-
-    const handleSubscribe = async () => {
-      if (!email.value) return;
-
-      try {
-        // Newsletter subscription logic would go here
-        showNotification("Uspešno ste se prijavili na newsletter!", "success");
-        email.value = "";
-      } catch (err) {
-        showNotification("Došlo je do greške pri prijavi na newsletter.", "error");
+    /**
+     * Prebacuje na prethodnu stranicu paginacije.
+     */
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--;
       }
     };
 
-    const handleAddProduct = async (productData: any) => {
+    /**
+     * Prebacuje na sledeću stranicu paginacije.
+     */
+    const nextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+      }
+    };
+
+    /**
+     * Rukuje akcijom izmene proizvoda. (Trenutno prikazuje notifikaciju)
+     * @param product Proizvod koji se menja.
+     */
+    const handleEditProduct = (product: Product) => {
+      console.log('Editing product:', product);
+      showNotification(`Funkcionalnost izmene proizvoda (${product.naziv}) još uvek nije implementirana.`, 'info');
+    };
+
+    /**
+     * Asinhrono rukuje akcijom brisanja proizvoda.
+     * @param product Proizvod koji se briše.
+     */
+    const handleDeleteProduct = async (product: Product) => {
+      if (confirm(`Da li ste sigurni da želite da obrišete proizvod "${product.naziv}"?`)) {
+        try {
+          await productStore.deleteProduct(product.id);
+          showNotification('Proizvod uspešno obrisan.', 'success');
+        } catch (err) {
+          console.error('Error deleting product:', err);
+          showNotification('Greška pri brisanju proizvoda.', 'error');
+        }
+      }
+    };
+
+    /**
+     * Rukuje događajem nakon brisanja proizvoda. (Trenutno samo loguje poruku)
+     */
+    const handleProductDeleted = async () => {
+      console.log('handleProductDeleted called - this function might be redundant or needs full implementation.');
+    };
+
+    /**
+     * Ažurira režim prikaza proizvoda (mreža ili lista).
+     * @param newViewMode Novi režim prikaza.
+     */
+    const updateViewMode = (newViewMode: 'grid' | 'list') => {
+      viewMode.value = newViewMode;
+    };
+
+    /**
+     * Prikazuje modal sa detaljima proizvoda.
+     * @param product Proizvod za prikaz.
+     */
+    const showProductDetailsModal = (product: Product) => {
+      selectedProductForModal.value = product;
+    };
+
+    /**
+     * Zatvara modal sa detaljima proizvoda.
+     */
+    const closeProductDetailsModal = () => {
+      selectedProductForModal.value = null;
+    };
+
+    /**
+     * Otvara modal za dodavanje novog proizvoda.
+     */
+    const openProductFormModal = () => {
+      isProductFormModalVisible.value = true;
+    };
+
+    /**
+     * Zatvara modal za dodavanje novog proizvoda.
+     */
+    const closeProductFormModal = () => {
+      isProductFormModalVisible.value = false;
+    };
+
+    /**
+     * Asinhrono rukuje čuvanjem (dodavanjem) novog proizvoda.
+     * @param productData Podaci o novom proizvodu.
+     */
+    const handleProductSaved = async (productData: Partial<Product>) => {
       try {
-        console.log("Adding product:", productData);
-        await productStore.createProduct(productData);
-        await productStore.fetchProducts();
-        showNotification("Proizvod uspešno dodat!", "success");
-        closeAddProductModal();
+        await productStore.createProduct(productData as Product);
+        showNotification("Proizvod uspešno sačuvan!", "success");
+        refreshProducts();
+        closeProductFormModal();
       } catch (err) {
-        showNotification("Došlo je do greške pri dodavanju proizvoda.", "error");
+        console.error("Error saving product:", err);
+        showNotification("Greška pri čuvanju proizvoda.", "error");
       }
     };
 
     return {
+      products,
+      categories,
       loading,
       error,
+      categoryLoading,
+      categoryError,
       viewMode,
-      filters,
-      filteredProducts,
-      isAdmin: authStore.isAdmin,
-      categories,
-      sortOption,
-      email,
-      selectedProduct,
-      showProductModal,
-      showAddProductModal,
-      handleSortChange,
-      handleViewChange,
-      handleFilterChange,
-      resetFilters,
-      handleAddToCart,
-      handleViewProduct,
-      closeProductModal,
-      closeAddProductModal,
-      handleSubscribe,
-      handleAddProduct
+      applyFilters,
+      applySort,
+      applySearch,
+      paginatedProducts,
+      currentPage,
+      totalPages,
+      prevPage,
+      nextPage,
+      authStore,
+      handleEditProduct,
+      handleDeleteProduct,
+      handleProductDeleted,
+      updateViewMode,
+      selectedProductForModal,
+      showProductDetailsModal,
+      closeProductDetailsModal,
+      refreshProducts,
+      isProductFormModalVisible,
+      openProductFormModal,
+      closeProductFormModal,
+      handleProductSaved
     };
-  }
-}
+  },
+});
 </script>
 
 <style scoped>
-.products-page {
+.products-page-wrapper {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-.main-content {
-  flex: 1;
-  width: 100%;
-  padding: 0;
+.products-page-content {
+  flex-grow: 1;
+  /* Styles for products-page can be moved or kept here */
 }
 
-.hero {
-  padding: 4rem 2rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  margin: 0;
-  color: white;
-  text-align: center;
-}
-
-.hero-content {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.hero h1 {
-  font-size: 3em;
-  margin-bottom: 1rem;
-  font-weight: 700;
-}
-
-.highlight {
-  color: #ffd700;
-}
-
-.products-section {
-  padding: 4rem 0;
-  background: #f8f9fa;
-  width: 100%;
-}
-
-.container {
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.newsletter {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  padding: 4rem 2rem;
-  color: white;
-  text-align: center;
-}
-
-.newsletter-content {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.newsletter-form {
+.products-page {
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+  flex-direction: column;
+  /* min-height: calc(100vh - 80px); */
+  /* This might not be needed if wrapper handles min-height */
 }
 
-.newsletter-form input {
-  flex: 1;
+.product-grid-container {
+  flex-grow: 1;
   padding: 1rem;
-  font-size: 1em;
-  border: none;
-  border-radius: 30px;
+  max-width: 1400px;
+  /* Max width for the content area */
+  margin: 0 auto;
+  /* Center the content */
+  width: 100%;
 }
 
-.newsletter-form button {
-  padding: 1rem 2rem;
-  font-size: 1em;
-  background-color: #ffd700;
-  color: #2d3748;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.newsletter-form button:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 8px 15px rgba(255, 215, 0, 0.2);
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  /* Ensure it takes some space */
   font-size: 1.2rem;
-  color: #666;
+  color: #555;
 }
 
-.error {
-  color: #dc2626;
-  text-align: center;
-  padding: 2rem;
+.error-state p {
+  color: #d32f2f;
+  /* Red color for errors */
 }
 
-.notification {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 1rem;
-  border-radius: 8px;
-  color: white;
-  z-index: 1000;
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1rem 0;
+  /* Adjusted bottom padding */
 }
 
-.notification.success {
-  background-color: #10b981;
-}
-
-.notification.error {
-  background-color: #ef4444;
-}
-
-/* Animation Classes */
-.animate-fade-in {
-  animation: fadeIn 1s ease-out forwards;
-}
-
-.animate-slide-down {
-  animation: slideDown 1s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 1s ease-out 0.3s backwards;
-}
-
-/* Animation Keyframes */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.no-products {
-  text-align: center;
-  padding: 3rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.reset-btn {
-  margin-left: 0.5rem;
-  padding: 0.4rem 0.8rem;
-  background: #6366f1;
+.pagination-controls button {
+  background-color: #6366f1;
   color: white;
   border: none;
-  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  margin: 0 0.5rem;
+  border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 500;
+}
+
+.pagination-controls button:disabled {
+  background-color: #a5b4fc;
+  /* Lighter shade for disabled */
+  cursor: not-allowed;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #4f46e5;
+  /* Darker shade on hover */
+}
+
+.pagination-controls span {
+  font-size: 1rem;
+  color: #333;
+  margin: 0 1rem;
+}
+
+/* Newsletter styles are removed as they are now in NewsletterSubscription.vue */
+
+.admin-actions-header {
+  display: flex;
+  justify-content: flex-end;
+  /* Default to flex-end for mobile */
+  margin-bottom: 1rem;
+  /* Space below the button */
+  padding: 0.5rem 1rem;
+  /* Padding around the button area */
+  background-color: #f9fafb;
+  /* Light background to differentiate */
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Media query for desktop screens */
+@media (min-width: 768px) {
+
+  /* Adjust breakpoint as needed */
+  .admin-actions-header {
+    justify-content: center;
+    /* Center on desktop */
+  }
+}
+
+.add-product-button-header {
+  padding: 0.75rem 1.5rem;
+  background-color: #10b981;
+  /* Green color */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
   font-size: 0.9rem;
 }
 
-.reset-btn:hover {
-  background: #4f46e5;
+.add-product-button-header i {
+  margin-right: 0.5rem;
 }
 
-.products-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-/* Responsive styles */
-@media (max-width: 1200px) {
-  .container {
-    padding: 0 1.5rem;
-  }
-}
-
-@media (max-width: 992px) {
-  .products-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.add-product-button-header:hover {
+  background-color: #059669;
+  /* Darker green on hover */
 }
 
 @media (max-width: 768px) {
-  .hero h1 {
-    font-size: 2.5em;
+  .admin-actions-header {
+    padding: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    /* Adjust margin for mobile */
   }
 
-  .products-section {
-    padding: 2rem 0;
-  }
-
-  .container {
-    padding: 0 1rem;
-  }
-
-  .newsletter {
-    padding: 3rem 1rem;
-  }
-
-  .newsletter-content {
-    padding: 0 1rem;
-  }
-
-  .newsletter-form {
-    flex-direction: column;
-  }
-
-  .newsletter-form input,
-  .newsletter-form button {
+  .add-product-button-header {
     width: 100%;
-    box-sizing: border-box;
-  }
-
-  .newsletter-form button {
-    padding: 0.8rem;
-  }
-
-  .no-products {
-    padding: 2rem 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero h1 {
-    font-size: 2em;
-  }
-
-  .reset-btn {
-    margin-left: 0;
-    margin-top: 0.5rem;
-    display: inline-block;
-  }
-
-  .no-products {
-    flex-direction: column;
-    text-align: center;
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
   }
 }
 </style>

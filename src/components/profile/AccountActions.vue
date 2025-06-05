@@ -1,63 +1,39 @@
 <template>
   <div class="card actions-card">
     <h3>Upravljanje nalogom</h3>
-    <div class="action-list">
-      <button class="action-btn">
+    <div class="action-list"> <button class="action-btn" @click="handleEditProfile">
+        <i class="fas fa-user-edit"></i>
+        <span>Izmeni Profil</span>
+      </button> <button class="action-btn" @click="handleChangePassword">
         <i class="fas fa-key"></i>
         <span>Promeni lozinku</span>
-      </button>
-      <button class="action-btn">
-        <i class="fas fa-bell"></i>
-        <span>Podešavanja obaveštenja</span>
-      </button>
-      <button class="action-btn">
-        <i class="fas fa-cog"></i>
-        <span>Podešavanja naloga</span>
-      </button>
-      <button class="action-btn danger" @click="confirmLogout">
+      </button> <button class="action-btn danger" @click="handleConfirmLogout">
         <i class="fas fa-sign-out-alt"></i>
         <span>Odjavi se</span>
       </button>
-    </div>
-
-    <!-- Dijalog za potvrdu odjave -->
-    <div class="modal" v-if="showLogoutConfirm">
-      <div class="modal-content">
-        <h3>Potvrda odjave</h3>
-        <p>Da li ste sigurni da želite da se odjavite?</p>
-        <div class="modal-actions">
-          <button class="modal-btn cancel" @click="showLogoutConfirm = false">Otkaži</button>
-          <button class="modal-btn confirm" @click="handleLogout">Potvrdi</button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { ref } from 'vue';
-
 export default {
-  name: "AccountActions",
-  emits: ['logout'],
-  setup(_props, { emit }) {
-    const showLogoutConfirm = ref(false);
-
-    // Funkcija za prikazivanje dijaloga za potvrdu odjave
-    const confirmLogout = () => {
-      showLogoutConfirm.value = true;
+  name: "AccountActions", emits: ['logout', 'change-password', 'confirm-logout', 'edit-profile'], setup(_props, { emit }) {
+    const handleChangePassword = () => {
+      emit('change-password');
     };
 
-    // Funkcija za potvrdu odjave
-    const handleLogout = () => {
-      emit('logout');
-      showLogoutConfirm.value = false;
+    const handleConfirmLogout = () => {
+      emit('confirm-logout');
+    };
+
+    const handleEditProfile = () => {
+      emit('edit-profile');
     };
 
     return {
-      showLogoutConfirm,
-      confirmLogout,
-      handleLogout
+      handleChangePassword,
+      handleConfirmLogout,
+      handleEditProfile
     };
   }
 }
@@ -70,6 +46,18 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.25);
+}
+
+.action-btn.primary:hover {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
 }
 
 .action-btn {
@@ -93,7 +81,7 @@ export default {
 }
 
 .action-btn i {
-  color: #6366f1;
+  color: #2d3748;
   width: 24px;
   text-align: center;
 }
@@ -115,59 +103,5 @@ export default {
 h3 {
   color: #2d3748;
   margin-bottom: 1.5rem;
-}
-
-/* Modal styles */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.modal-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.modal-btn.cancel {
-  background: #f3f4f6;
-  color: #4b5563;
-  border: none;
-}
-
-.modal-btn.confirm {
-  background: #dc2626;
-  color: white;
-  border: none;
-}
-
-.modal-btn:hover {
-  transform: translateY(-2px);
 }
 </style>
