@@ -13,7 +13,7 @@
         <router-link :to="link.path" active-class="active" @click="closeMenu">
           {{ link.name }}
         </router-link>
-      </li>      <!-- Add cart link with item count -->
+      </li> <!-- Add cart link with item count -->
       <li class="cart-link">
         <router-link to="/cart" class="cart-button" @click="closeMenu">
           <span class="cart-icon">
@@ -62,13 +62,11 @@ export default {
       { path: "/contact", name: "Kontakt" },
     ];
 
-    // Funkcija za uključivanje/isključivanje menija
     const toggleMenu = () => {
       console.log("Toggling menu");
       isMenuOpen.value = !isMenuOpen.value;
     };
 
-    // Funkcija za zatvaranje menija
     const closeMenu = () => {
       isMenuOpen.value = false;
     };
@@ -317,9 +315,11 @@ export default {
   0% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
   }
+
   70% {
     box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
@@ -346,11 +346,11 @@ export default {
     font-size: 1.25rem;
     margin-right: 0.5rem;
   }
-  
+
   .cart-text {
     font-size: 1.1rem;
   }
-  
+
   .cart-count {
     top: -8px;
     right: -12px;

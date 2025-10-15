@@ -181,7 +181,7 @@ const submitOrder = async () => {
   }));
 
   const orderDetails: CreateOrderPayload = {
-    user_id: authStore.user ? authStore.user.id : null,
+    korisnik_id: authStore.user ? Number(authStore.user.id) : null,
     ime_prezime: name.value.trim(),
     adresa: address.value.trim(),
     telefon: phone.value.trim(),

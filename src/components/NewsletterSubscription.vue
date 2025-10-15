@@ -26,8 +26,6 @@ export default defineComponent({
           alert('Molimo unesite validnu email adresu.');
           return;
         }
-        // Handle newsletter subscription logic here
-        console.log('Subscribing with email:', email.value);
         alert(`Hvala vam što ste se pretplatili sa ${email.value}!`);
         email.value = ''; // Clear input after submission
       } else {

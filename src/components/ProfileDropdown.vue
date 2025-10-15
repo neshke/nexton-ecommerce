@@ -70,22 +70,22 @@ export default {
     onMounted(() => window.addEventListener('resize', handleResize));
     onUnmounted(() => window.removeEventListener('resize', handleResize));
 
-    // Funkcija za otvaranje/zatvaranje menija.
     const toggleMenu = () => {
       isOpen.value = !isOpen.value;
     };
 
-    // Funkcija za zatvaranje menija.
     const closeMenu = () => {
       isOpen.value = false;
       emit('close');
-    };    // Funkcija za odjavu korisnika.
+    };
+
     const handleLogout = async () => {
       await authStore.logout();
-      closeMenu(); // Close dropdown menu
-      emit('close'); // Signal navbar to close mobile menu
+      closeMenu();
+      emit('close');
       router.push('/');
-    };    // Rukovanje klikom van komponente da bi se zatvorila.
+    };
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
 
@@ -99,16 +99,15 @@ export default {
       }
     };
 
-    // Lifecycle hooks
-    // Dodaje osluškivač događaja za klik van komponente kada se komponenta montira.
     onMounted(() => document.addEventListener('click', handleClickOutside));
-    // Uklanja osluškivač događaja kada se komponenta demontira.
-    onUnmounted(() => document.removeEventListener('click', handleClickOutside)); return {
-      isOpen, // Stanje menija (otvoren/zatvoren)
-      isMobile, // Flag for mobile view
-      toggleMenu, // Funkcija za otvaranje/zatvaranje
-      closeMenu, // Funkcija za zatvaranje
-      handleLogout // Funkcija za odjavu
+    onUnmounted(() => document.removeEventListener('click', handleClickOutside));
+
+    return {
+      isOpen,
+      isMobile,
+      toggleMenu,
+      closeMenu,
+      handleLogout
     };
   }
 };

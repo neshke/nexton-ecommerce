@@ -17,23 +17,30 @@
         <AccountActions @logout="handleLogout" @change-password="handleChangePassword"
           @confirm-logout="handleConfirmLogout" @edit-profile="handleEditProfile" class="animate-slide-up"
           style="animation-delay: 0.8s" />
-      </div>
+      </div> <!-- Dodata UserOrders komponenta -->
+      <UserOrders class="animate-slide-up" style="animation-delay: 1s; margin-top: 2rem;"
+        @show-order-details="handleShowOrderDetails" />
+    </main>
 
-      <!-- Dodata UserOrders komponenta -->
-      <UserOrders class="animate-slide-up" style="animation-delay: 1s; margin-top: 2rem;" />
-    </main> <!-- Edit Profile Modal -->
+    <!-- Edit Profile Modal -->
     <EditProfileModal v-model:show="isEditProfileModalVisible" :user="user"
-      @close="isEditProfileModalVisible = false" /> <!-- Change Password Modal -->
+      @close="isEditProfileModalVisible = false" />
+
+    <!-- Change Password Modal -->
     <ChangePasswordModal :isVisible="isChangePasswordModalVisible" @close="isChangePasswordModalVisible = false"
       @success="isChangePasswordModalVisible = false" />
 
     <!-- Logout Confirmation Modal -->
     <LogoutConfirmModal :isVisible="isLogoutConfirmModalVisible" @close="isLogoutConfirmModalVisible = false"
       @confirm="handleLogout" />
+
+    <!-- Order Details Modal -->
+    <OrderDetailsModal :order="selectedOrder" :visible="isOrderDetailsModalVisible"
+      @close="isOrderDetailsModalVisible = false" />
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -45,74 +52,61 @@ import { useProfileStore } from '@/stores/profileStore';
 import EditProfileModal from '@/components/profile/EditProfileModal.vue';
 import ChangePasswordModal from '@/components/profile/ChangePasswordModal.vue';
 import LogoutConfirmModal from '@/components/profile/LogoutConfirmModal.vue';
+import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue';
+import type { Order } from '@/models/index';
 
-export default {
-  name: "Profile", components: {
-    UserCard,
-    AccountActions,
-    UserOrders,
-    EditProfileModal,
-    ChangePasswordModal,
-    LogoutConfirmModal
-  },
-  setup() {
-    const router = useRouter();
-    const authStore = useAuthStore();
-    const profileStore = useProfileStore();
-    const { showNotification } = useNotification();
-    const isEditProfileModalVisible = ref(false); 
-    const isChangePasswordModalVisible = ref(false);
-    const isLogoutConfirmModalVisible = ref(false); 
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const { showNotification } = useNotification();
 
-    const user = computed(() => profileStore.user);
+const isEditProfileModalVisible = ref(false);
+const isChangePasswordModalVisible = ref(false);
+const isLogoutConfirmModalVisible = ref(false);
+const isOrderDetailsModalVisible = ref(false);
+const selectedOrder = ref<Order | null>(null);
 
-    onMounted(() => {
-      if (authStore.isAuthenticated && !profileStore.profile) {
-        profileStore.fetchUserProfile();
-      }
-    });
+const user = computed(() => profileStore.user);
 
-    // Generisanje prilagođene poruke dobrodošlice
-    const welcomeMessage = computed(() => {
-      if (!user.value?.name) return 'Dobrodošli na vašu profilnu tablu';
-      const hour = new Date().getHours();
-
-      if (hour < 12) return `Dobro jutro, ${user.value.name}!`;
-      if (hour < 18) return `Dobar dan, ${user.value.name}!`;
-      return `Dobro veče, ${user.value.name}!`;
-    });
-
-    // Funkcija za odjavu korisnika
-    const handleLogout = async () => {
-      await authStore.logout();
-      showNotification('Uspešno ste se odjavili sa vašeg naloga.', 'success');
-      router.push('/');
-    };    // Funkcija za uređivanje profila
-    const handleEditProfile = () => {
-      isEditProfileModalVisible.value = true; // Show the modal
-    };    // Funkcija za promenu lozinke
-    const handleChangePassword = () => {
-      isChangePasswordModalVisible.value = true; // Show the change password modal
-    };
-
-    // Funkcija za prikazivanje logout confirmation modal-a
-    const handleConfirmLogout = () => {
-      isLogoutConfirmModalVisible.value = true;
-    };
-
-    return {
-      user,
-      welcomeMessage,
-      handleLogout,
-      handleEditProfile,
-      handleChangePassword,
-      handleConfirmLogout,
-      isEditProfileModalVisible, // Expose the modal visibility state
-      isChangePasswordModalVisible, // Expose the change password modal visibility state
-      isLogoutConfirmModalVisible // Expose the logout confirmation modal visibility state
-    };
+onMounted(() => {
+  if (authStore.isAuthenticated && !profileStore.profile) {
+    profileStore.fetchUserProfile();
   }
-}
+});
+
+const welcomeMessage = computed(() => {
+  if (!user.value?.name) return 'Dobrodošli na vašu profilnu tablu';
+  const hour = new Date().getHours();
+
+  if (hour < 12) return `Dobro jutro, ${user.value.name}!`;
+  if (hour < 18) return `Dobar dan, ${user.value.name}!`;
+  return `Dobro veče, ${user.value.name}!`;
+});
+
+const handleLogout = async () => {
+  await authStore.logout();
+  showNotification('Uspešno ste se odjavili sa vašeg naloga.', 'success');
+  router.push('/');
+};
+
+const handleEditProfile = () => {
+  isEditProfileModalVisible.value = true;
+};
+
+// Funkcija za promenu lozinke
+const handleChangePassword = () => {
+  isChangePasswordModalVisible.value = true;
+};
+
+// Funkcija za prikazivanje logout confirmation modal-a
+const handleConfirmLogout = () => {
+  isLogoutConfirmModalVisible.value = true;
+};
+
+const handleShowOrderDetails = (order: Order) => {
+  selectedOrder.value = order;
+  isOrderDetailsModalVisible.value = true;
+};
 </script>
 
 <style scoped>

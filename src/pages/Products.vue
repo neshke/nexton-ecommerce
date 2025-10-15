@@ -85,7 +85,7 @@ export default defineComponent({
 
       if (currentSearchTerm.value) {
         tempProducts = tempProducts.filter(product =>
-          product.naziv.toLowerCase().includes(currentSearchTerm.value.toLowerCase())
+          (product.naziv || '').toLowerCase().includes(currentSearchTerm.value.toLowerCase())
         );
       }
 
@@ -107,10 +107,10 @@ export default defineComponent({
           tempProducts.sort((a, b) => b.cena - a.cena);
           break;
         case 'name_asc':
-          tempProducts.sort((a, b) => a.naziv.localeCompare(b.naziv));
+          tempProducts.sort((a, b) => (a.naziv || '').localeCompare(b.naziv || ''));
           break;
         case 'name_desc':
-          tempProducts.sort((a, b) => b.naziv.localeCompare(a.naziv));
+          tempProducts.sort((a, b) => (b.naziv || '').localeCompare(a.naziv || ''));
           break;
       }
       return tempProducts;

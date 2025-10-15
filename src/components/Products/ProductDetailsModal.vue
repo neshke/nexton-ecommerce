@@ -44,31 +44,28 @@ import type { Product } from "@/models";
 import { useNotification } from '@/utils/notifications'; // Add this import
 
 const props = defineProps<{
-  show: boolean; // Da li je modal vidljiv
-  product: Product | null; // Proizvod koji se prikazuje u modalu
+  show: boolean;
+  product: Product | null;
 }>();
 
-const emit = defineEmits(["close", "add-to-cart"]); // Događaji koje modal emituje
+const emit = defineEmits(["close", "add-to-cart"]);
 
 const quantity = ref(1);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-const router = useRouter(); // Instanca router-a
+const router = useRouter();
 
-const { showNotification } = useNotification(); // Add this line
+const { showNotification } = useNotification();
 
-// Zatvara modalni prozor
 const closeModal = () => {
   emit("close");
 };
 
-// Povećava količinu proizvoda.
 const increaseQuantity = () => {
   quantity.value++;
 };
 
-// Smanjuje količinu proizvoda, ali ne ispod 1
 const decreaseQuantity = () => {
   if (quantity.value > 1) {
     quantity.value--;

@@ -2,7 +2,7 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   // Use baseURL without trailing slash - match API configuration
-  baseURL: "http://93.86.80.61:8080",
+  baseURL: "http://localhost:80",
   headers: {
     "Content-Type": "application/json",
   },
@@ -24,12 +24,8 @@ axiosInstance.interceptors.request.use(
         console.error("Error parsing token:", error);
       }
     }
-    
-    // Log the final URL for debugging
-    console.log("Request method:", config.method);
-    console.log("Final request URL:", `${config.baseURL}${config.url}`);
-    console.log("Auth header:", config.headers.Authorization ? "Present" : "Missing");
-    
+
+
     return config;
   },
   (error) => {
@@ -38,7 +34,6 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle authentication errors
 axiosInstance.interceptors.response.use(
   (response) => {
     return response;
@@ -49,13 +44,13 @@ axiosInstance.interceptors.response.use(
       // Clear localStorage and redirect to login
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      
+
       // Only redirect if not already on login page
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

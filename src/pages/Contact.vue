@@ -16,45 +16,26 @@
         <!-- Contact Form -->
         <form class="contact-form animate-slide-left" @submit.prevent="handleSubmit">
           <h2>Pošaljite nam poruku</h2>
-          
+
           <div class="form-group">
             <label for="name">Vaše ime</label>
-            <input 
-              type="text" 
-              id="name" 
-              v-model="form.name" 
-              placeholder="Unesite vaše ime" 
-              :class="{ 'invalid': errors.name }"
-              @blur="validateField('name')"
-              @focus="clearError('name')" 
-            />
+            <input type="text" id="name" v-model="form.name" placeholder="Unesite vaše ime"
+              :class="{ 'invalid': errors.name }" @blur="validateField('name')" @focus="clearError('name')" />
             <span class="error" v-if="errors.name">{{ errors.name }}</span>
           </div>
-          
+
           <div class="form-group">
             <label for="email">Email</label>
-            <input 
-              type="email" 
-              id="email" 
-              v-model="form.email" 
-              placeholder="Unesite vaš email"
-              :class="{ 'invalid': errors.email }"
-              @blur="validateField('email')"
-              @focus="clearError('email')"
-            />
+            <input type="email" id="email" v-model="form.email" placeholder="Unesite vaš email"
+              :class="{ 'invalid': errors.email }" @blur="validateField('email')" @focus="clearError('email')" />
             <span class="error" v-if="errors.email">{{ errors.email }}</span>
           </div>
-          
+
           <div class="form-group">
             <label for="message">Poruka</label>
-            <textarea 
-              id="message" 
-              v-model="form.message"
-              placeholder="Unesite vašu poruku"
-              :class="{ 'invalid': errors.message }"
-              @blur="validateField('message')"
-              @focus="clearError('message')"
-            ></textarea>
+            <textarea id="message" v-model="form.message" placeholder="Unesite vašu poruku"
+              :class="{ 'invalid': errors.message }" @blur="validateField('message')"
+              @focus="clearError('message')"></textarea>
             <span class="error" v-if="errors.message">{{ errors.message }}</span>
           </div>
 
@@ -62,7 +43,7 @@
             <span>{{ isSubmitting ? 'Slanje...' : 'Pošalji poruku' }}</span>
             <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
           </button>
-          
+
           <div v-if="submitStatus.show" :class="['submit-status', submitStatus.type]" role="alert">
             <i :class="submitStatus.type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
             <span>{{ submitStatus.message }}</span>
@@ -123,7 +104,7 @@ export default {
       email: "",
       message: ""
     });
-    
+
     // Status slanja forme
     const submitStatus = reactive({
       show: false,
@@ -133,27 +114,27 @@ export default {
 
     // Stanje slanja forme
     const isSubmitting = ref(false);
-    
+
     const { showNotification } = useNotification();
-    
+
     // Clear error when field is focused
     const clearError = (field: string) => {
       errors[field] = "";
     };
-    
+
     // Validate a single field
     const validateField = (field: string) => {
       // Clear any previous errors first
       errors[field] = "";
-      
+
       const value = form[field as keyof ContactFormData];
-      
+
       // Check if field is empty
       if (!value || value.trim() === "") {
         errors[field] = "Ovo polje je obavezno";
         return false;
       }
-      
+
       // Special validation for email field
       if (field === "email") {
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -162,31 +143,31 @@ export default {
           return false;
         }
       }
-      
+
       return true;
     };
 
     // Validate the entire form
     const validateForm = () => {
       let isValid = true;
-      
+
       // Validate each field
       ["name", "email", "message"].forEach(field => {
         if (!validateField(field)) {
           isValid = false;
         }
       });
-      
+
       return isValid;
     };
-    
+
     // Form submission
     const handleSubmit = async () => {
       // Reset submission status
       submitStatus.show = false;
       submitStatus.type = "";
       submitStatus.message = "";
-      
+
       // Validate the form before submitting
       if (!validateForm()) {
         showNotification('Molimo ispravite greške u formi', 'error');
@@ -195,31 +176,31 @@ export default {
         submitStatus.message = "Molimo ispravite greške u formi";
         return;
       }
-      
+
       isSubmitting.value = true;
-      
+
       try {
         // Call the API to send the email message
         const response = await axiosInstance.post(API_URLS.CONTACT.SEND_MESSAGE, form);
-        
+
         if (response.data.status === 200) {
           showNotification("Vaša poruka je uspešno poslata!", "success");
           submitStatus.show = true;
           submitStatus.type = "success";
           submitStatus.message = "Vaša poruka je uspešno poslata! Uskoro ćemo Vas kontaktirati.";
-          
+
           // Reset the form
           form.name = "";
           form.email = "";
           form.message = "";
-          
+
         } else {
           throw new Error(response.data.message || "Došlo je do greške prilikom slanja poruke");
         }
       } catch (error: any) {
         console.error("Greška prilikom slanja poruke:", error);
         const errorMsg = error.response?.data?.message || error.message || "Došlo je do greške prilikom slanja poruke";
-        
+
         showNotification(errorMsg, "error");
         submitStatus.show = true;
         submitStatus.type = "error";

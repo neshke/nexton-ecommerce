@@ -47,10 +47,13 @@ export const useProductStore = defineStore("products", () => {
       if (savedProducts) {
         const parsedProducts: Product[] = JSON.parse(savedProducts);
         if (Array.isArray(parsedProducts) && parsedProducts.every(p => typeof p === 'object' && p !== null && 'id' in p)) {
-          products.value = parsedProducts.map(product => ({
-            ...product,
-            slika_url: formatImageUrl(product.slika_url) 
-          }));
+          // Filtriramo samo aktivne proizvode
+          products.value = parsedProducts
+            .filter(product => product.aktivan)
+            .map(product => ({
+              ...product,
+              slika_url: formatImageUrl(product.slika_url)
+            }));
         } else {
           console.warn("Pronađeni nevalidni podaci o proizvodima u localStorage. Preuzimanje sa API-ja.");
           await fetchProducts();
@@ -64,16 +67,19 @@ export const useProductStore = defineStore("products", () => {
     }
   };
 
-  // Računato svojstvo za dobijanje svih proizvoda.
-  const getProducts = computed(() => products.value);
+  // Računato svojstvo za dobijanje svih aktivnih proizvoda.
+  const getProducts = computed(() => products.value.filter(p => p.aktivan));
 
   /** Postavlja listu proizvoda i čuva je u localStorage. */
   const setProducts = (productList: Product[]) => {
     if (Array.isArray(productList)) {
-      products.value = productList.map(product => ({
-        ...product,
-        slika_url: formatImageUrl(product.slika_url)
-      }));
+      // Filtriramo samo aktivne proizvode
+      products.value = productList
+        .filter(product => product.aktivan)
+        .map(product => ({
+          ...product,
+          slika_url: formatImageUrl(product.slika_url)
+        }));
       saveToLocalStorage();
     } else {
       console.error("setProducts je primio nevalidnu listu proizvoda:", productList);
@@ -91,10 +97,13 @@ export const useProductStore = defineStore("products", () => {
       }
 
       if (response.data.status === 200 && Array.isArray(response.data.data)) {
-        const processedProducts = response.data.data.map((item: any) => ({
-          ...item,
-          slika_url: formatImageUrl(item.slika_url)
-        })); 
+        // Filtriramo samo aktivne proizvode
+        const processedProducts = response.data.data
+          .filter((item: any) => item.aktivan)
+          .map((item: any) => ({
+            ...item,
+            slika_url: formatImageUrl(item.slika_url)
+          }));
         setProducts(processedProducts);
       } else {
         throw new Error(response.data?.message || "Neuspešno preuzimanje proizvoda");
@@ -296,7 +305,7 @@ export const useProductStore = defineStore("products", () => {
       // Ensure the product ID is part of the URL for the PUT request
       const url = `${API_URLS.PRODUCTS.UPDATE}?id=${productData.id}`;
       const response = await axiosInstance.put(
-        url, 
+        url,
         productData
       );
 
@@ -347,10 +356,13 @@ export const useProductStore = defineStore("products", () => {
       }
 
       if (response.data.status === 200 && Array.isArray(response.data.data)) {
-        const processedProducts = response.data.data.map((item: any) => ({
-          ...item,
-          slika_url: formatImageUrl(item.slika_url)
-        })); 
+        // Filtriramo samo aktivne proizvode
+        const processedProducts = response.data.data
+          .filter((item: any) => item.aktivan)
+          .map((item: any) => ({
+            ...item,
+            slika_url: formatImageUrl(item.slika_url)
+          }));
         setProducts(processedProducts);
       } else {
         throw new Error(response.data?.message || "Neuspešno preuzimanje proizvoda po kategoriji");

@@ -60,25 +60,21 @@ export default defineComponent({
     const authStore = useAuthStore();
     const { showNotification } = useNotification();
 
-    const product = ref<Product | null>(null); // Proizvod koji se prikazuje
-    const quantity = ref(1); // Količina za dodavanje u korpu
-    const loading = ref(false); // Status učitavanja
-    const error = ref<string | null>(null); // Poruka o grešci
-    const isZoomed = ref(false); // Status zuma slike
-    const productImage = ref<HTMLImageElement | null>(null); // Referenca na element slike
+    const product = ref<Product | null>(null);
+    const quantity = ref(1);
+    const loading = ref(false);
+    const error = ref<string | null>(null);
+    const isZoomed = ref(false);
+    const productImage = ref<HTMLImageElement | null>(null);
 
-    // Dobijanje ID-ja proizvoda iz rute
     const productId = computed(() => parseInt(route.params.id as string, 10));
 
-    // Provera da li je korisnik admin
     const isAdmin = computed(() => authStore.user?.role === 'admin');
 
-    // Dohvata detalje proizvoda kada se komponenta montira ili ID promeni
     const fetchProductDetails = async (id: number) => {
       loading.value = true;
       error.value = null;
       try {
-        // Poziva akciju za dohvatanje proizvoda po ID-ju
         const fetchedProduct = await store.fetchProductById(id);
         if (fetchedProduct) {
           product.value = fetchedProduct;
@@ -93,33 +89,28 @@ export default defineComponent({
       }
     };
 
-    // Poziva se kada se komponenta montira
     onMounted(() => {
       if (productId.value) {
         fetchProductDetails(productId.value);
       }
     });
 
-    // Prati promene ID-ja proizvoda u ruti i ponovo dohvata podatke
     watch(productId, (newId) => {
       if (newId) {
         fetchProductDetails(newId);
       }
     });
 
-    // Povećava količinu proizvoda.
     const increaseQuantity = () => {
       quantity.value++;
     };
 
-    // Smanjuje količinu proizvoda.
     const decreaseQuantity = () => {
       if (quantity.value > 1) {
         quantity.value--;
       }
     };
 
-    // Dodaje proizvod u korpu.
     const handleAddToCart = () => {
       if (!product.value) return;
 
@@ -134,7 +125,6 @@ export default defineComponent({
       }
     };
 
-    // Rukuje greškom pri učitavanju slike
     const handleImageError = (e: Event) => {
       const img = e.target as HTMLImageElement;
       if (!isPlaceholder(img.src)) {
@@ -157,45 +147,36 @@ export default defineComponent({
       }).format(price);
     };
 
-    // Rukuje pomeranjem miša preko slike za efekat zuma
     const handleZoom = (event: MouseEvent) => {
-      // Ako slika nije učitana ili je placeholder, prekida
       if (!productImage.value || isPlaceholder(product.value?.slika_url || undefined))
         return;
 
       const image = productImage.value;
       const { left, top, width, height } = image.getBoundingClientRect();
 
-      // Izračunava poziciju kursora relativno u odnosu na sliku (0 do 1)
       const x = (event.clientX - left) / width;
       const y = (event.clientY - top) / height;
 
-      // Postavlja tačku transformacije za zum
       image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
-      isZoomed.value = true; // Aktivira zum
+      isZoomed.value = true;
     };
 
-    // Vraća korisnika na prethodnu stranicu
     const goBack = () => {
       router.back();
     };
 
-    // Rukuje brisanjem proizvoda (samo za admina)
     const handleDeleteProduct = async () => {
       if (!product.value) return;
 
-      // Traži potvrdu od korisnika
       if (confirm('Da li ste sigurni da želite da obrišete ovaj proizvod?')) {
         try {
           loading.value = true;
 
-          // Koristi metod iz productStore umesto direktnog API poziva
           await store.deleteProduct(product.value.id);
 
           showNotification("Proizvod je uspešno obrisan", "success");
-          router.push('/products'); // Preusmerava na listu proizvoda
+          router.push('/products');
         } catch (error: any) {
-          // Rukovanje greškama
           console.error("Delete error:", error);
           showNotification(error.message || "Greška prilikom brisanja proizvoda", "error");
         } finally {
@@ -206,23 +187,23 @@ export default defineComponent({
 
 
     return {
-      product, // Detalji proizvoda
-      quantity, // Količina
-      loading, // Status učitavanja
-      error, // Poruka o grešci
-      isAdmin, // Da li je korisnik admin
-      isZoomed, // Status zuma slike
-      productImage, // Referenca na element slike
-      PLACEHOLDER_IMAGE, // Konstanta za placeholder sliku
-      increaseQuantity, // Funkcija za povećanje količine
-      decreaseQuantity, // Funkcija za smanjenje količine
-      handleAddToCart, // Funkcija za dodavanje u korpu
-      handleImageError, // Funkcija za rukovanje greškom slike
-      isPlaceholder, // Funkcija za proveru da li je slika placeholder
-      formatPrice, // Funkcija za formatiranje cene
-      handleZoom, // Funkcija za rukovanje zumom slike
-      goBack, // Funkcija za povratak nazad
-      handleDeleteProduct, // Funkcija za brisanje proizvoda (admin)
+      product,
+      quantity,
+      loading,
+      error,
+      isAdmin,
+      isZoomed,
+      productImage,
+      PLACEHOLDER_IMAGE,
+      increaseQuantity,
+      decreaseQuantity,
+      handleAddToCart,
+      handleImageError,
+      isPlaceholder,
+      formatPrice,
+      handleZoom,
+      goBack,
+      handleDeleteProduct,
     };
   }
 });

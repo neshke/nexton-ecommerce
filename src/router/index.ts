@@ -84,17 +84,17 @@ const router = createRouter({
 // Add navigation guards
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
-  
+
   // Provera da li ruta zahteva autentifikaciju
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login'); // Preusmeri na login ako nije autentifikovan
-  } 
+  }
   // Provera da li ruta zahteva admin prava
   else if (to.meta.requiresAdmin && !authStore.isAdmin) {
     // Možeš preusmeriti na neku 'zabranjeno' stranicu ili na početnu
     console.warn('Pokušaj pristupa admin ruti od strane ne-administratora.');
     next('/'); // Preusmeri na početnu stranicu
-  } 
+  }
   // Originalna provera za /profile, sada pokrivena sa to.meta.requiresAuth
   // if (to.path === '/profile' && !authStore.isAuthenticated) {
   //   next('/login');

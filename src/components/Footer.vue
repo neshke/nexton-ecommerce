@@ -10,7 +10,6 @@ import { computed } from 'vue';
 export default {
   name: "Footer",
   setup() {
-    // Izračunata vrednost koja vraća trenutnu godinu
     const currentYear = computed(() => new Date().getFullYear());
 
     return {

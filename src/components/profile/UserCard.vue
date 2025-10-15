@@ -15,7 +15,6 @@
     </div>
 
     <div class="user-actions">
-      <!-- Mesto za buduće korisničke akcije -->
     </div>
 
     <div v-if="authStore.isAdmin" class="admin-actions">
