@@ -1,5 +1,26 @@
-# Vue 3 + TypeScript + Vite
+# nexton-ecommerce
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Full-stack e-commerce platform frontend. Built with Vue 3, TypeScript, and Vite.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+---
+
+## Tech Stack
+
+- **Vue 3** — Composition API
+- **TypeScript** — Strict typing
+- **Vite** — Build tool
+- **Tailwind CSS** — Styling
+
+## Backend
+
+PHP REST API — see [nexton-shop](https://github.com/Neshke/nexton-shop) for the backend.
+
+---
+
+## Development
+
+```bash
+npm install
+npm run dev
+npm run build
+```
